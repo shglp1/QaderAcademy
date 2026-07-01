@@ -1,61 +1,55 @@
 ```
-# Dependency directories
+# Compiled and build artifacts
+*.pyc
+__pycache__/
+*.o
+*.obj
+*.class
+*.exe
+*.dll
+*.so
+*.a
+*.out
+
+# Dependencies
 vendor/
 node_modules/
-
-# Laravel-specific directories
-bootstrap/cache/
-storage/framework/cache/data/
-storage/framework/cache/
-storage/framework/sessions/
-storage/framework/views/
-storage/framework/
-storage/logs/
-storage/app/public/
-storage/app/private/
-storage/app/
-
-# Environment files
 .env
 .env.local
 .env.*
 
-# IDE and editor files
+# Laravel/Lumen specific
+bootstrap/cache/
+storage/framework/cache/
+storage/logs/
+public/storage/
+
+# IDE
 .vscode/
 .idea/
 *.swp
 *.swo
 *.tmp
 
-# OS generated files
+# OS
 .DS_Store
 Thumbs.db
 
 # Logs
 *.log
 
-# Compiled files
-*.php~
-*.js~
-*.css~
-
-# Laravel compiled assets
-public/build/
-
-# Coverage reports
+# Coverage
 coverage/
 htmlcov/
 .coverage
 
-# Testing
-.phpunit/
-.phpunit.result.cache
+# Build systems
+dist/
+build/
+target/
+.gradle/
 
-# MyPy cache (if Python components added later)
+# Python caches
 .mypy_cache/
 .pytest_cache/
-
-# Composer and PHP tools
-composer/vendor/
-composer/cache/
 ```
