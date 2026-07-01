@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('student_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('course_id')->constrained()->onDelete('cascade');
+            $table->foreignId('enrollment_id')->constrained()->onDelete('cascade');
             $table->string('certificate_number')->unique(); // verification code
             $table->string('qr_code_path')->nullable();
             $table->date('issued_date');

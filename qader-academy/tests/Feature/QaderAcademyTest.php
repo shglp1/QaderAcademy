@@ -531,7 +531,8 @@ class QaderAcademyTest extends TestCase
             'chapter_id' => $chapter->id,
             'title_en' => 'Video 1',
             'title_ar' => 'فيديو 1',
-            'duration_seconds' => 300
+            'duration_seconds' => 300,
+            'video_url' => 'videos/test-video.mp4'
         ]);
 
         // Create inactive enrollment
@@ -574,7 +575,8 @@ class QaderAcademyTest extends TestCase
             'chapter_id' => $chapter->id,
             'title_en' => 'Video 1',
             'title_ar' => 'فيديو 1',
-            'duration_seconds' => 300
+            'duration_seconds' => 300,
+            'video_url' => 'videos/test-video.mp4'
         ]);
 
         $enrollment = Enrollment::create([

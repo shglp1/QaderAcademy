@@ -39,7 +39,8 @@ class FinalExamQuestionController extends Controller
         $validated = $request->validated();
         
         // Verify final exam ownership
-        $finalExam = FinalExam::whereHas('course', function ($q) use ($trainerId = Auth::id()) {
+        $trainerId = Auth::id();
+        $finalExam = FinalExam::whereHas('course', function ($q) use ($trainerId) {
                 $q->where('trainer_id', $trainerId);
             })
             ->findOrFail($validated['final_exam_id']);
