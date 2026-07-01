@@ -130,13 +130,15 @@ class ProgressService
             return 0.0;
         }
         
-        // Track completed videos via a simple mechanism
-        // In a real implementation, you'd have a video_completions table
-        // For now, we'll assume video completion is tracked elsewhere
-        // This is a placeholder that should be connected to actual video completion tracking
-        
-        // TODO: Implement video completion tracking table and update this logic
-        $completedVideos = 0; // Placeholder - should query video_completions table
+        // Count completed videos from video_completions table
+        $completedVideos = \App\Models\VideoCompletion::where('student_id', $studentId)
+            ->whereIn('video_id', function ($query) use ($course) {
+                $query->select('id')
+                    ->from('videos')
+                    ->whereIn('chapter_id', $course->chapters->pluck('id'));
+            })
+            ->where('is_completed', true)
+            ->count();
         
         $videoPercentage = ($completedVideos / $totalVideos) * 100;
         return ($videoPercentage / 100) * self::VIDEO_WEIGHT;

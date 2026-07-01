@@ -35,4 +35,18 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | MyFatoorah Payment Gateway
+    |--------------------------------------------------------------------------
+    */
+
+    'myfatoorah' => [
+        'api_key' => env('MYFATOORAH_API_KEY'),
+        'is_test' => env('MYFATOORAH_IS_TEST', true),
+        'test_webhook_token' => env('MYFATOORAH_TEST_WEBHOOK_TOKEN'),
+        'base_test_url' => env('MYFATOORAH_BASE_TEST_URL', 'https://apitest.myfatoorah.com'),
+        'base_live_url' => env('MYFATOORAH_BASE_LIVE_URL', 'https://api.myfatoorah.com'),
+    ],
+
 ];

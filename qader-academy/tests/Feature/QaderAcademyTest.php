@@ -15,8 +15,11 @@ use App\Models\Payment;
 use App\Models\QuizAttempt;
 use App\Models\QuizAnswer;
 use App\Models\Certificate;
+use App\Models\Video;
+use App\Models\VideoCompletion;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
+use Laravel\Scout\EngineManager;
 use Tests\TestCase;
 
 class QaderAcademyTest extends TestCase
@@ -115,20 +118,96 @@ class QaderAcademyTest extends TestCase
             'status' => 'published'
         ]);
 
-        $response = $this->actingAs($student)->postJson('/api/enrollments', ['course_id' => $course->id]);
+        $response = $this->actingAs($student)->postJson('/api/student/enrollments', ['course_id' => $course->id]);
         $response->assertStatus(201);
         $enrollment = Enrollment::find($response->json('enrollment.id'));
         $this->assertEquals('pending_payment', $enrollment->status);
 
         $payment = Payment::where('enrollment_id', $enrollment->id)->first();
+        $payment->update(['gateway_reference' => 'INV-123']);
+        
         $this->postJson('/api/webhooks/payment', [
-            'PaymentId' => $payment->transaction_id,
-            'ReferenceId' => $enrollment->id,
-            'Status' => 'Success'
+            'InvoiceId' => 'INV-123',
+            'PaymentStatus' => 'Success'
         ])->assertStatus(200);
 
         $enrollment->refresh();
         $this->assertEquals('active', $enrollment->status);
+    }
+
+    public function test_myfatoorah_webhook_uses_invoice_id_and_payment_status(): void
+    {
+        $student = User::factory()->create(['role' => 'student', 'password' => bcrypt('password')]);
+        StudentProfile::create(['user_id' => $student->id, 'university' => 'Test', 'city' => 'Cairo', 'age' => 20, 'graduation_status' => 'not_graduated']);
+        
+        $trainer = User::factory()->create(['role' => 'trainer']);
+        TrainerProfile::create(['user_id' => $trainer->id, 'bio' => 'Bio', 'specialization' => 'Spec', 'approval_status' => 'approved']);
+        
+        $course = Course::create([
+            'trainer_id' => $trainer->id,
+            'category_id' => Category::first()->id,
+            'title_en' => 'Test Course',
+            'title_ar' => 'كورس تجريبي',
+            'description_en' => 'Description',
+            'description_ar' => 'وصف',
+            'price' => 100,
+            'status' => 'published'
+        ]);
+
+        $enrollment = Enrollment::create([
+            'student_id' => $student->id,
+            'course_id' => $course->id,
+            'status' => 'pending_payment'
+        ]);
+        
+        $payment = Payment::create([
+            'student_id' => $student->id,
+            'enrollment_id' => $enrollment->id,
+            'amount' => 100,
+            'currency' => 'SAR',
+            'status' => 'pending',
+            'payment_method' => 'myfatoorah',
+            'gateway_reference' => 'INV-456'
+        ]);
+
+        // Test successful payment activates enrollment
+        $response = $this->postJson('/api/webhooks/payment', [
+            'InvoiceId' => 'INV-456',
+            'PaymentStatus' => 'Success'
+        ]);
+        $response->assertStatus(200);
+        $enrollment->refresh();
+        $this->assertEquals('active', $enrollment->status);
+
+        // Test failed payment does not activate enrollment
+        $enrollment2 = Enrollment::create([
+            'student_id' => $student->id,
+            'course_id' => $course->id,
+            'status' => 'pending_payment'
+        ]);
+        $payment2 = Payment::create([
+            'student_id' => $student->id,
+            'enrollment_id' => $enrollment2->id,
+            'amount' => 100,
+            'currency' => 'SAR',
+            'status' => 'pending',
+            'payment_method' => 'myfatoorah',
+            'gateway_reference' => 'INV-789'
+        ]);
+
+        $response = $this->postJson('/api/webhooks/payment', [
+            'InvoiceId' => 'INV-789',
+            'PaymentStatus' => 'Failed'
+        ]);
+        $response->assertStatus(200);
+        $enrollment2->refresh();
+        $this->assertEquals('pending_payment', $enrollment2->status);
+    }
+
+    public function test_route_webhooks_payment_resolves(): void
+    {
+        $route = route('webhooks.payment');
+        $this->assertEquals(url('/api/webhooks/payment'), $route);
     }
 
     public function test_quiz_mcq_auto_grade(): void
@@ -164,7 +243,7 @@ class QaderAcademyTest extends TestCase
         
         Enrollment::create(['student_id' => $student->id, 'course_id' => $course->id, 'status' => 'active']);
 
-        $response = $this->actingAs($student)->postJson('/api/quiz-attempts', [
+        $response = $this->actingAs($student)->postJson('/api/student/quiz-attempts', [
             'quiz_id' => $quiz->id,
             'answers' => [$question->id => '4']
         ]);
@@ -208,7 +287,7 @@ class QaderAcademyTest extends TestCase
         
         Enrollment::create(['student_id' => $student->id, 'course_id' => $course->id, 'status' => 'active']);
 
-        $response = $this->actingAs($student)->postJson('/api/quiz-attempts', [
+        $response = $this->actingAs($student)->postJson('/api/student/quiz-attempts', [
             'quiz_id' => $quiz->id,
             'answers' => [$question->id => 'My answer']
         ]);
@@ -344,5 +423,214 @@ class QaderAcademyTest extends TestCase
         
         $this->getJson('/api/verify-certificate/INVALID')
             ->assertStatus(404)->assertJson(['valid' => false]);
+    }
+
+    public function test_dompdf_certificate_generation(): void
+    {
+        $student = User::factory()->create(['role' => 'student', 'password' => bcrypt('password')]);
+        StudentProfile::create(['user_id' => $student->id, 'university' => 'Test', 'city' => 'Cairo', 'age' => 20, 'graduation_status' => 'not_graduated']);
+        
+        $trainer = User::factory()->create(['role' => 'trainer']);
+        TrainerProfile::create(['user_id' => $trainer->id, 'bio' => 'Bio', 'specialization' => 'Spec', 'approval_status' => 'approved']);
+        
+        $course = Course::create([
+            'trainer_id' => $trainer->id,
+            'category_id' => Category::first()->id,
+            'title_en' => 'Certificate Course',
+            'title_ar' => 'كورس شهادة',
+            'description_en' => 'Desc',
+            'description_ar' => 'وصف',
+            'price' => 100,
+            'status' => 'published'
+        ]);
+        
+        $enrollment = Enrollment::create([
+            'student_id' => $student->id,
+            'course_id' => $course->id,
+            'status' => 'active',
+            'progress_percentage' => 100,
+            'completed_at' => now()
+        ]);
+
+        // Verify DomPDF facade is available (no Class not found error)
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('certificates.certificate', [
+            'student' => $student,
+            'course' => $course,
+            'certificate' => Certificate::create([
+                'enrollment_id' => $enrollment->id,
+                'verification_code' => 'CERT-DOMPDF-TEST',
+                'issued_at' => now()
+            ])
+        ]);
+        
+        $this->assertInstanceOf(\Barryvdh\DomPDF\PDF::class, $pdf);
+    }
+
+    public function test_scout_database_search_returns_english_and_arabic_matches(): void
+    {
+        config(['scout.driver' => 'database']);
+        
+        $trainer = User::factory()->create(['role' => 'trainer']);
+        TrainerProfile::create(['user_id' => $trainer->id, 'bio' => 'Bio', 'specialization' => 'Spec', 'approval_status' => 'approved']);
+        
+        // Create courses with English and Arabic titles
+        Course::create([
+            'trainer_id' => $trainer->id,
+            'category_id' => Category::first()->id,
+            'title_en' => 'Laravel Development',
+            'title_ar' => 'تطوير لارافيل',
+            'description_en' => 'Learn Laravel framework',
+            'description_ar' => 'تعلم إطار عمل لارافيل',
+            'price' => 100,
+            'status' => 'published'
+        ]);
+        
+        Course::create([
+            'trainer_id' => $trainer->id,
+            'category_id' => Category::first()->id,
+            'title_en' => 'Python Programming',
+            'title_ar' => 'برمجة بايثون',
+            'description_en' => 'Learn Python programming',
+            'description_ar' => 'تعلم برمجة بايثون',
+            'price' => 150,
+            'status' => 'published'
+        ]);
+
+        // Search in English
+        $results = Course::search('Laravel')->get();
+        $this->assertCount(1, $results);
+        $this->assertEquals('Laravel Development', $results->first()->title_en);
+
+        // Search in Arabic
+        $results = Course::search('لارافيل')->get();
+        $this->assertCount(1, $results);
+        $this->assertEquals('تطوير لارافيل', $results->first()->title_ar);
+    }
+
+    public function test_video_completion_requires_active_enrollment(): void
+    {
+        $student = User::factory()->create(['role' => 'student', 'password' => bcrypt('password')]);
+        StudentProfile::create(['user_id' => $student->id, 'university' => 'Test', 'city' => 'Cairo', 'age' => 20, 'graduation_status' => 'not_graduated']);
+        
+        $trainer = User::factory()->create(['role' => 'trainer']);
+        TrainerProfile::create(['user_id' => $trainer->id, 'bio' => 'Bio', 'specialization' => 'Spec', 'approval_status' => 'approved']);
+        
+        $course = Course::create([
+            'trainer_id' => $trainer->id,
+            'category_id' => Category::first()->id,
+            'title_en' => 'Video Course',
+            'title_ar' => 'كورس فيديو',
+            'description_en' => 'Desc',
+            'description_ar' => 'وصف',
+            'price' => 100,
+            'status' => 'published'
+        ]);
+        
+        $chapter = Chapter::create(['course_id' => $course->id, 'title_en' => 'Chapter 1', 'title_ar' => 'فصل 1', 'order' => 1]);
+        $video = Video::create([
+            'chapter_id' => $chapter->id,
+            'title_en' => 'Video 1',
+            'title_ar' => 'فيديو 1',
+            'duration_seconds' => 300,
+            'video_url' => 'videos/test-video.mp4'
+        ]);
+
+        // Create inactive enrollment
+        Enrollment::create([
+            'student_id' => $student->id,
+            'course_id' => $course->id,
+            'status' => 'pending_payment'
+        ]);
+
+        $response = $this->actingAs($student)->postJson("/api/student/videos/{$video->id}/progress", [
+            'watched_seconds' => 300,
+            'is_completed' => true
+        ]);
+
+        $response->assertStatus(403)
+            ->assertJson(['message' => 'Your enrollment is not active']);
+    }
+
+    public function test_video_completion_updates_progress_percentage(): void
+    {
+        $student = User::factory()->create(['role' => 'student', 'password' => bcrypt('password')]);
+        StudentProfile::create(['user_id' => $student->id, 'university' => 'Test', 'city' => 'Cairo', 'age' => 20, 'graduation_status' => 'not_graduated']);
+        
+        $trainer = User::factory()->create(['role' => 'trainer']);
+        TrainerProfile::create(['user_id' => $trainer->id, 'bio' => 'Bio', 'specialization' => 'Spec', 'approval_status' => 'approved']);
+        
+        $course = Course::create([
+            'trainer_id' => $trainer->id,
+            'category_id' => Category::first()->id,
+            'title_en' => 'Video Course',
+            'title_ar' => 'كورس فيديو',
+            'description_en' => 'Desc',
+            'description_ar' => 'وصف',
+            'price' => 100,
+            'status' => 'published'
+        ]);
+        
+        $chapter = Chapter::create(['course_id' => $course->id, 'title_en' => 'Chapter 1', 'title_ar' => 'فصل 1', 'order' => 1]);
+        $video = Video::create([
+            'chapter_id' => $chapter->id,
+            'title_en' => 'Video 1',
+            'title_ar' => 'فيديو 1',
+            'duration_seconds' => 300,
+            'video_url' => 'videos/test-video.mp4'
+        ]);
+
+        $enrollment = Enrollment::create([
+            'student_id' => $student->id,
+            'course_id' => $course->id,
+            'status' => 'active',
+            'progress_percentage' => 0
+        ]);
+
+        $initialProgress = $enrollment->progress_percentage;
+        
+        $response = $this->actingAs($student)->postJson("/api/student/videos/{$video->id}/progress", [
+            'watched_seconds' => 300,
+            'is_completed' => true
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('enrollment_progress.progress_percentage', fn($value) => $value >= $initialProgress);
+        $this->assertTrue(isset($response->json('enrollment_progress')['status']));
+    }
+
+    public function test_student_cannot_access_trainer_routes(): void
+    {
+        $student = User::factory()->create(['role' => 'student', 'password' => bcrypt('password')]);
+        StudentProfile::create(['user_id' => $student->id, 'university' => 'Test', 'city' => 'Cairo', 'age' => 20, 'graduation_status' => 'not_graduated']);
+
+        $response = $this->actingAs($student)->getJson('/api/trainer/courses');
+        $response->assertStatus(403);
+    }
+
+    public function test_trainer_cannot_access_student_routes(): void
+    {
+        $trainer = User::factory()->create(['role' => 'trainer']);
+        TrainerProfile::create(['user_id' => $trainer->id, 'bio' => 'Bio', 'specialization' => 'Spec', 'approval_status' => 'approved']);
+
+        $response = $this->actingAs($trainer)->getJson('/api/student/courses');
+        $response->assertStatus(403);
+    }
+
+    public function test_student_cannot_access_admin_routes(): void
+    {
+        $student = User::factory()->create(['role' => 'student', 'password' => bcrypt('password')]);
+        StudentProfile::create(['user_id' => $student->id, 'university' => 'Test', 'city' => 'Cairo', 'age' => 20, 'graduation_status' => 'not_graduated']);
+
+        $response = $this->actingAs($student)->getJson('/api/admin/analytics/overview');
+        $response->assertStatus(403);
+    }
+
+    public function test_trainer_cannot_access_admin_routes(): void
+    {
+        $trainer = User::factory()->create(['role' => 'trainer']);
+        TrainerProfile::create(['user_id' => $trainer->id, 'bio' => 'Bio', 'specialization' => 'Spec', 'approval_status' => 'approved']);
+
+        $response = $this->actingAs($trainer)->getJson('/api/admin/analytics/overview');
+        $response->assertStatus(403);
     }
 }

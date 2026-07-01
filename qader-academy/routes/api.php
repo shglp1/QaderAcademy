@@ -29,7 +29,7 @@ Route::prefix('auth')->group(function () {
 });
 
 // ==================== Student Routes ====================
-Route::middleware(['auth:sanctum'])->prefix('student')->group(function () {
+Route::middleware(['auth:sanctum', 'role:student'])->prefix('student')->group(function () {
     // Course browsing
     Route::get('courses', [StudentCourseController::class, 'index']);
     Route::get('courses/{course}', [StudentCourseController::class, 'show']);
@@ -44,6 +44,10 @@ Route::middleware(['auth:sanctum'])->prefix('student')->group(function () {
     Route::post('quiz-attempts', [QuizController::class, 'submitQuiz']);
     Route::post('final-exam-attempts', [QuizController::class, 'submitFinalExam']);
     
+    // Video Progress Tracking
+    Route::post('videos/{video}/progress', [\App\Http\Controllers\Api\Student\VideoProgressController::class, 'markComplete']);
+    Route::get('videos/{video}/progress', [\App\Http\Controllers\Api\Student\VideoProgressController::class, 'showProgress']);
+    
     // Certificates
     Route::get('certificates', [StudentCourseController::class, 'myCertificates']);
     
@@ -55,7 +59,7 @@ Route::middleware(['auth:sanctum'])->prefix('student')->group(function () {
 });
 
 // ==================== Trainer Routes ====================
-Route::middleware(['auth:sanctum'])->prefix('trainer')->group(function () {
+Route::middleware(['auth:sanctum', 'role:trainer'])->prefix('trainer')->group(function () {
     // Course Management
     Route::apiResource('courses', TrainerCourseController::class);
     Route::post('courses/{course}/submit-for-approval', [TrainerCourseController::class, 'submitForApproval']);
@@ -132,4 +136,4 @@ Route::middleware(['auth:sanctum', 'role:admin,super_admin'])->prefix('admin')->
 Route::get('verify-certificate/{certificateNumber}', [\App\Http\Controllers\Api\CertificateController::class, 'verify']);
 
 // ==================== Payment Webhook (MyFatoorah) ====================
-Route::post('webhooks/payment', [\App\Http\Controllers\Api\PaymentWebhookController::class, 'handle']);
+Route::post('webhooks/payment', [\App\Http\Controllers\Api\PaymentWebhookController::class, 'handle'])->name('webhooks.payment');

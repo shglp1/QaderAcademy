@@ -5,18 +5,21 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class Certificate extends Model
+class VideoCompletion extends Model
 {
     protected $fillable = [
         'student_id',
-        'course_id',
+        'video_id',
         'enrollment_id',
-        'certificate_number',
-        'qr_code_path',
-        'issued_date',
-        'is_valid',
-        'revoked_at',
-        'revocation_reason',
+        'is_completed',
+        'watched_seconds',
+        'completed_at',
+    ];
+
+    protected $casts = [
+        'is_completed' => 'boolean',
+        'watched_seconds' => 'integer',
+        'completed_at' => 'datetime',
     ];
 
     public function student(): BelongsTo
@@ -24,9 +27,9 @@ class Certificate extends Model
         return $this->belongsTo(User::class, 'student_id');
     }
 
-    public function course(): BelongsTo
+    public function video(): BelongsTo
     {
-        return $this->belongsTo(Course::class);
+        return $this->belongsTo(Video::class);
     }
 
     public function enrollment(): BelongsTo

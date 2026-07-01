@@ -11,18 +11,18 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('certificates', function (Blueprint $table) {
+        Schema::create('video_completions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('student_id')->constrained('users')->onDelete('cascade');
-            $table->foreignId('course_id')->constrained()->onDelete('cascade');
+            $table->foreignId('video_id')->constrained()->onDelete('cascade');
             $table->foreignId('enrollment_id')->constrained()->onDelete('cascade');
-            $table->string('certificate_number')->unique(); // verification code
-            $table->string('qr_code_path')->nullable();
-            $table->date('issued_date');
-            $table->boolean('is_valid')->default(true);
-            $table->timestamp('revoked_at')->nullable();
-            $table->string('revocation_reason')->nullable();
+            $table->boolean('is_completed')->default(false);
+            $table->integer('watched_seconds')->default(0);
+            $table->timestamp('completed_at')->nullable();
             $table->timestamps();
+
+            // Ensure unique completion record per student per video per enrollment
+            $table->unique(['student_id', 'video_id', 'enrollment_id']);
         });
     }
 
@@ -31,6 +31,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('certificates');
+        Schema::dropIfExists('video_completions');
     }
 };
