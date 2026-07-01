@@ -1,28 +1,32 @@
 ```
-# Laravel-specific ignores
-bootstrap/cache/
-storage/logs/
-storage/framework/
-public/storage/
+# Compiled and build artifacts
+*.pyc
+__pycache__/
+
+# Dependencies
 vendor/
+node_modules/
+
+# Logs and temp files
+*.log
+*.tmp
 
 # Environment
 .env
 .env.local
-.env.*
+*.env.*
 
-# IDE
+# Editors
 .vscode/
 .idea/
 
-# OS
+# OS generated files
 .DS_Store
 Thumbs.db
 
-# Logs
-*.log
-
-# Temporary files
-*.tmp
-*.swp
+# Laravel specific
+bootstrap/cache/
+storage/logs/
+storage/framework/
+public/storage
 ```

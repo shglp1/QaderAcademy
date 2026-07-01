@@ -11,10 +11,23 @@ class RoleMiddleware
     /**
      * Handle an incoming request.
      *
-     * @param  Closure(Request): (Response)  $next
+     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     * @param  string  ...$roles  The allowed roles (e.g., 'admin', 'super_admin')
      */
-    public function handle(Request $request, Closure $next): Response
+    public function handle(Request $request, Closure $next, string ...$roles): Response
     {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json(['message' => 'Unauthenticated'], 401);
+        }
+
+        if (!in_array($user->role, $roles)) {
+            return response()->json([
+                'message' => 'Insufficient permissions. Required role: ' . implode(' or ', $roles)
+            ], 403);
+        }
+
         return $next($request);
     }
 }
