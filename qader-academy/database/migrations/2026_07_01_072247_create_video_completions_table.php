@@ -15,13 +15,14 @@ return new class extends Migration
             $table->id();
             $table->foreignId('student_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('video_id')->constrained()->onDelete('cascade');
+            $table->foreignId('enrollment_id')->constrained()->onDelete('cascade');
             $table->boolean('is_completed')->default(false);
             $table->integer('watched_seconds')->default(0);
             $table->timestamp('completed_at')->nullable();
             $table->timestamps();
 
-            // Ensure unique completion record per student per video
-            $table->unique(['student_id', 'video_id']);
+            // Ensure unique completion record per student per video per enrollment
+            $table->unique(['student_id', 'video_id', 'enrollment_id']);
         });
     }
 

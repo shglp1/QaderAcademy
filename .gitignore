@@ -1,26 +1,39 @@
 ```
-# Dependencies
-vendor/
-composer.lock
-
 # Environment
 .env
 .env.local
 .env.*
 
-# Logs
+# Dependencies
+vendor/
+node_modules/
+
+# Compiled and build artifacts
+*.pyc
+__pycache__/
+*.o
+*.obj
+dist/
+build/
+target/
+
+# Logs and temp files
 *.log
+*.tmp
+*.swp
 
-# IDE
-.idea/
+# Editors
 .vscode/
+.idea/
 
-# OS
+# OS generated files
 .DS_Store
 Thumbs.db
 
-# Cache
+# Laravel specific
 bootstrap/cache/
-storage/framework/cache/
 storage/logs/
+storage/framework/
+public/storage/
+composer.lock
 ```

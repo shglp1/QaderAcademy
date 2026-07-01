@@ -10,6 +10,7 @@ class VideoCompletion extends Model
     protected $fillable = [
         'student_id',
         'video_id',
+        'enrollment_id',
         'is_completed',
         'watched_seconds',
         'completed_at',
@@ -29,5 +30,10 @@ class VideoCompletion extends Model
     public function video(): BelongsTo
     {
         return $this->belongsTo(Video::class);
+    }
+
+    public function enrollment(): BelongsTo
+    {
+        return $this->belongsTo(Enrollment::class);
     }
 }

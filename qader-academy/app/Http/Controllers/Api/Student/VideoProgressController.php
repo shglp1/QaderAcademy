@@ -39,6 +39,13 @@ class VideoProgressController extends Controller
             ], 403);
         }
 
+        // Require active enrollment status
+        if ($enrollment->status !== 'active') {
+            return response()->json([
+                'message' => 'Your enrollment is not active',
+            ], 403);
+        }
+
         $validated = $request->validate([
             'watched_seconds' => 'nullable|integer|min:0',
             'is_completed' => 'nullable|boolean',
@@ -49,7 +56,7 @@ class VideoProgressController extends Controller
 
         // Create or update video completion record
         $completion = VideoCompletion::updateOrCreate(
-            ['student_id' => $studentId, 'video_id' => $video->id],
+            ['student_id' => $studentId, 'video_id' => $video->id, 'enrollment_id' => $enrollment->id],
             [
                 'watched_seconds' => $watchedSeconds,
                 'is_completed' => $isCompleted,
@@ -67,6 +74,12 @@ class VideoProgressController extends Controller
                 'watched_seconds' => $completion->watched_seconds,
                 'is_completed' => $completion->is_completed,
                 'completed_at' => $completion->completed_at,
+            ],
+            'enrollment_progress' => [
+                'videos_progress' => $enrollment->videos_progress,
+                'quizzes_progress' => $enrollment->quizzes_progress,
+                'final_exam_progress' => $enrollment->final_exam_progress,
+                'overall_progress' => $enrollment->overall_progress,
             ],
         ]);
     }
