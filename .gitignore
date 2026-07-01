@@ -1,35 +1,19 @@
 ```
-# Compiled and build artifacts
-*.pyc
-__pycache__/
-*.o
-*.obj
-*.class
-*.exe
-*.dll
-*.so
-*.a
-*.out
-
-# Dependencies
+# Laravel-specific ignores
+bootstrap/cache/
+storage/logs/
+storage/framework/
+public/storage/
 vendor/
-node_modules/
+
+# Environment
 .env
 .env.local
 .env.*
 
-# Laravel/Lumen specific
-bootstrap/cache/
-storage/framework/cache/
-storage/logs/
-public/storage/
-
 # IDE
 .vscode/
 .idea/
-*.swp
-*.swo
-*.tmp
 
 # OS
 .DS_Store
@@ -38,18 +22,7 @@ Thumbs.db
 # Logs
 *.log
 
-# Coverage
-coverage/
-htmlcov/
-.coverage
-
-# Build systems
-dist/
-build/
-target/
-.gradle/
-
-# Python caches
-.mypy_cache/
-.pytest_cache/
+# Temporary files
+*.tmp
+*.swp
 ```
