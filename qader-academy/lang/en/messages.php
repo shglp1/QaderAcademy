@@ -59,4 +59,46 @@ return [
     'Connect' => 'Connect',
     'Empowering learners worldwide with quality education and expert guidance.' => 'Empowering learners worldwide with quality education and expert guidance.',
     'All rights reserved.' => 'All rights reserved.',
+
+    // Certificate messages
+    'certificate_title' => 'Certificate of Completion',
+    'certificate_of_completion' => 'Certificate of Completion',
+    'this_certifies_that' => 'This is to certify that',
+    'this_is_to_certify_that' => 'This is to certify that',
+    'has_successfully_completed_the_course' => 'has successfully completed the course',
+    'trained_by' => 'Trained by',
+    'completion_date' => 'Completion Date',
+    'certificate_number' => 'Certificate Number',
+    'issue_date' => 'Issue Date',
+    'trainer_signature' => 'Trainer Signature',
+    'verify_at' => 'Verify at',
+    'administration' => 'Administration',
+    'congratulations' => 'Congratulations',
+    'thank_you' => 'Thank you for choosing QaderAcademy',
+    
+    // Notification messages
+    'dear' => 'Dear',
+    'enrollment_activated_subject' => 'Enrollment Confirmed - Start Learning!',
+    'enrollment_activated_line1' => 'Your enrollment in :course has been confirmed.',
+    'enrollment_activated_line2' => 'You can now access all course materials and start learning.',
+    'start_learning' => 'Start Learning',
+    'enrollment_activated_notification' => 'Your enrollment in :course is now active. Start learning!',
+    
+    'certificate_ready_subject' => 'Your Certificate is Ready!',
+    'certificate_ready_line1' => 'Congratulations! You have earned your certificate for :course.',
+    'certificate_ready_line2' => 'Your certificate is now available for download.',
+    'download_certificate' => 'Download Certificate',
+    'certificate_verification_info' => 'Verification Code: :code',
+    'certificate_ready_notification' => 'Your certificate for :course is ready for download.',
+    
+    'certificate_not_found' => 'Certificate not found or invalid.',
+    'certificate_verified_successfully' => 'Certificate verified successfully.',
+    'certificate_file_not_found' => 'Certificate file not found.',
+    'unauthorized' => 'Unauthorized access.',
+    
+    // Enrollment messages
+    'already_enrolled' => 'You are already enrolled in this course.',
+    'pending_payment' => 'Enrollment pending payment completion.',
+    'enrollment_created_pending_payment' => 'Enrollment created. Please complete payment to activate.',
+    'enrollment_failed' => 'Enrollment creation failed. Please try again.',
 ];
