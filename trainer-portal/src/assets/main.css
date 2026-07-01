@@ -1,0 +1,52 @@
+@import 'tailwindcss';
+
+/* Custom styles */
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f9fafb;
+  color: #111827;
+}
+
+.rtl {
+  direction: rtl;
+}
+
+/* Modal styles */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+.modal-content {
+  background-color: white;
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  max-width: 32rem;
+  width: 100%;
+  margin-left: 1rem;
+  margin-right: 1rem;
+}
+
+/* Wizard steps */
+.wizard-step {
+  @apply flex items-center;
+}
+
+.wizard-step.completed .step-circle {
+  @apply bg-green-500 border-green-500;
+}
+
+.wizard-step.active .step-circle {
+  @apply bg-indigo-600 border-indigo-600 text-white;
+}
+
+.wizard-step .step-circle {
+  @apply w-8 h-8 rounded-full border-2 flex items-center justify-center text-sm font-medium;
+}
