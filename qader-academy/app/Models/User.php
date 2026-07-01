@@ -74,6 +74,11 @@ class User extends Authenticatable
         return $this->role === 'super_admin';
     }
 
+    public function hasRole(array $roles): bool
+    {
+        return in_array($this->role, $roles);
+    }
+
     public function studentProfile(): HasOne
     {
         return $this->hasOne(StudentProfile::class);
