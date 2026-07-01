@@ -1,0 +1,28 @@
+```
+# Laravel-specific ignores
+bootstrap/cache/
+storage/logs/
+storage/framework/
+public/storage/
+vendor/
+
+# Environment
+.env
+.env.local
+.env.*
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.swp
+```
