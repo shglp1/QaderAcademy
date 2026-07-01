@@ -60,7 +60,7 @@ class PaymentWebhookController extends Controller
                 'Pending' => 'pending',
             ];
 
-            $newStatus = $statusMap[$paymentStatus] ?? 'unknown';
+            $newStatus = $statusMap[$paymentStatus] ?? 'pending';
 
             // Update payment status
             $payment->update([
@@ -71,12 +71,12 @@ class PaymentWebhookController extends Controller
 
             // ONLY activate enrollment if payment is successful
             if ($newStatus === 'success') {
-                $enrollment = Enrollment::where('id', $payment->enrollment_id)->first();
+                $enrollment = Enrollment::find($payment->enrollment_id);
 
                 if ($enrollment && $enrollment->status === 'pending_payment') {
                     $enrollment->update([
                         'status' => 'active',
-                        'activated_at' => now(),
+                        'payment_id' => $payment->id,
                     ]);
 
                     // Send notification to student

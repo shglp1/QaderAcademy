@@ -1,5 +1,16 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import axios from 'axios'
+
+const API_BASE = '/api'
+
+const setAuthHeader = (token) => {
+  if (token) {
+    axios.defaults.headers.common.Authorization = `Bearer ${token}`
+  } else {
+    delete axios.defaults.headers.common.Authorization
+  }
+}
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref(null)
@@ -8,31 +19,23 @@ export const useAuthStore = defineStore('auth', () => {
   const isAuthenticated = computed(() => !!token.value)
   const isTrainer = computed(() => user.value?.role === 'trainer')
 
+  setAuthHeader(token.value)
+
   async function login(email, password) {
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({ email, password })
-      })
+      const response = await axios.post(`${API_BASE}/auth/login`, { email, password })
+      const data = response.data
+      const authToken = data.access_token || data.token
 
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Login failed')
-      }
-
-      token.value = data.token
-      user.value = data.user
+      token.value = authToken
+      user.value = data.user ?? null
       
-      localStorage.setItem('token', data.token)
+      localStorage.setItem('token', authToken)
+      setAuthHeader(authToken)
       
       return { success: true }
     } catch (error) {
-      return { success: false, error: error.message }
+      return { success: false, error: error.response?.data?.message || error.message }
     }
   }
 
@@ -40,27 +43,19 @@ export const useAuthStore = defineStore('auth', () => {
     token.value = null
     user.value = null
     localStorage.removeItem('token')
+    setAuthHeader(null)
   }
 
   async function fetchUser() {
     if (!token.value) return
 
     try {
-      const response = await fetch('/api/user', {
-        headers: {
-          'Authorization': `Bearer ${token.value}`,
-          'Accept': 'application/json'
-        }
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        user.value = data
-      } else {
-        logout()
-      }
+      setAuthHeader(token.value)
+      const response = await axios.get(`${API_BASE}/auth/me`)
+      user.value = response.data.user ?? response.data
     } catch (error) {
-      console.error('Failed to fetch user:', error)
+      logout()
+      throw error
     }
   }
 

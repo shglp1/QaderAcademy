@@ -99,6 +99,74 @@ class QaderAcademyTest extends TestCase
         $this->postJson('/api/auth/login', ['email' => $admin->email, 'password' => 'password'])->assertStatus(200);
     }
 
+    public function test_login_response_includes_access_token_and_token_alias(): void
+    {
+        $student = User::factory()->create(['role' => 'student', 'password' => bcrypt('password')]);
+        StudentProfile::create([
+            'user_id' => $student->id,
+            'university' => 'Test',
+            'city' => 'Cairo',
+            'age' => 20,
+            'graduation_status' => 'not_graduated',
+        ]);
+
+        $response = $this->postJson('/api/auth/login', [
+            'email' => $student->email,
+            'password' => 'password',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'access_token',
+                'token',
+                'token_type',
+                'user',
+                'profile',
+                'role',
+            ]);
+
+        $this->assertSame($response->json('access_token'), $response->json('token'));
+    }
+
+    public function test_auth_me_works_with_sanctum_token(): void
+    {
+        $student = User::factory()->create(['role' => 'student']);
+        StudentProfile::create([
+            'user_id' => $student->id,
+            'university' => 'Test',
+            'city' => 'Cairo',
+            'age' => 20,
+            'graduation_status' => 'not_graduated',
+        ]);
+
+        $token = $student->createToken('test-token')->plainTextToken;
+
+        $this->withHeader('Authorization', "Bearer {$token}")
+            ->getJson('/api/auth/me')
+            ->assertStatus(200)
+            ->assertJsonPath('role', 'student')
+            ->assertJsonPath('studentProfile.user_id', $student->id);
+    }
+
+    public function test_user_endpoint_works_with_sanctum_token(): void
+    {
+        $trainer = User::factory()->create(['role' => 'trainer']);
+        TrainerProfile::create([
+            'user_id' => $trainer->id,
+            'bio' => 'Bio',
+            'specialization' => 'Spec',
+            'approval_status' => 'approved',
+        ]);
+
+        $token = $trainer->createToken('test-token')->plainTextToken;
+
+        $this->withHeader('Authorization', "Bearer {$token}")
+            ->getJson('/api/user')
+            ->assertStatus(200)
+            ->assertJsonPath('role', 'trainer')
+            ->assertJsonPath('trainerProfile.user_id', $trainer->id);
+    }
+
     public function test_enrollment_payment_webhook_flow(): void
     {
         $student = User::factory()->create(['role' => 'student', 'password' => bcrypt('password')]);
@@ -607,12 +675,157 @@ class QaderAcademyTest extends TestCase
         $response->assertStatus(403);
     }
 
+    public function test_student_cannot_access_trainer_quiz_endpoint(): void
+    {
+        $student = User::factory()->create(['role' => 'student']);
+        StudentProfile::create([
+            'user_id' => $student->id,
+            'university' => 'Test',
+            'city' => 'Cairo',
+            'age' => 20,
+            'graduation_status' => 'not_graduated',
+        ]);
+
+        $trainer = User::factory()->create(['role' => 'trainer']);
+        TrainerProfile::create([
+            'user_id' => $trainer->id,
+            'bio' => 'Bio',
+            'specialization' => 'Spec',
+            'approval_status' => 'approved',
+        ]);
+
+        $course = Course::create([
+            'trainer_id' => $trainer->id,
+            'category_id' => Category::first()->id,
+            'title_en' => 'Quiz Course',
+            'title_ar' => 'Quiz Course',
+            'description_en' => 'Desc',
+            'description_ar' => 'Desc',
+            'price' => 100,
+            'status' => 'published',
+        ]);
+
+        $chapter = Chapter::create([
+            'course_id' => $course->id,
+            'title_en' => 'Chapter 1',
+            'title_ar' => 'Chapter 1',
+            'order' => 1,
+        ]);
+
+        $quiz = Quiz::create([
+            'chapter_id' => $chapter->id,
+            'title_en' => 'Quiz 1',
+            'title_ar' => 'Quiz 1',
+        ]);
+
+        $this->actingAs($student)
+            ->getJson("/api/trainer/quizzes/{$quiz->id}")
+            ->assertStatus(403);
+    }
+
+    public function test_student_can_access_safe_student_quiz_endpoint(): void
+    {
+        $student = User::factory()->create(['role' => 'student']);
+        StudentProfile::create([
+            'user_id' => $student->id,
+            'university' => 'Test',
+            'city' => 'Cairo',
+            'age' => 20,
+            'graduation_status' => 'not_graduated',
+        ]);
+
+        $trainer = User::factory()->create(['role' => 'trainer']);
+        TrainerProfile::create([
+            'user_id' => $trainer->id,
+            'bio' => 'Bio',
+            'specialization' => 'Spec',
+            'approval_status' => 'approved',
+        ]);
+
+        $course = Course::create([
+            'trainer_id' => $trainer->id,
+            'category_id' => Category::first()->id,
+            'title_en' => 'Quiz Course',
+            'title_ar' => 'Quiz Course',
+            'description_en' => 'Desc',
+            'description_ar' => 'Desc',
+            'price' => 100,
+            'status' => 'published',
+        ]);
+
+        $chapter = Chapter::create([
+            'course_id' => $course->id,
+            'title_en' => 'Chapter 1',
+            'title_ar' => 'Chapter 1',
+            'order' => 1,
+        ]);
+
+        $quiz = Quiz::create([
+            'chapter_id' => $chapter->id,
+            'title_en' => 'Quiz 1',
+            'title_ar' => 'Quiz 1',
+        ]);
+
+        QuizQuestion::create([
+            'quiz_id' => $quiz->id,
+            'type' => 'mcq',
+            'question_en' => 'What is 2+2?',
+            'question_ar' => 'What is 2+2?',
+            'options' => [
+                ['text_en' => '4', 'text_ar' => '4', 'is_correct' => true],
+                ['text_en' => '5', 'text_ar' => '5', 'is_correct' => false],
+            ],
+            'points' => 10,
+        ]);
+
+        Enrollment::create([
+            'student_id' => $student->id,
+            'course_id' => $course->id,
+            'status' => 'active',
+        ]);
+
+        $this->actingAs($student)
+            ->getJson("/api/student/quizzes/{$quiz->id}")
+            ->assertStatus(200)
+            ->assertJsonPath('quiz.id', $quiz->id);
+    }
+
+    public function test_trainer_can_access_categories_without_admin_role(): void
+    {
+        $trainer = User::factory()->create(['role' => 'trainer']);
+        TrainerProfile::create([
+            'user_id' => $trainer->id,
+            'bio' => 'Bio',
+            'specialization' => 'Spec',
+            'approval_status' => 'approved',
+        ]);
+
+        $this->actingAs($trainer)
+            ->getJson('/api/categories')
+            ->assertStatus(200);
+    }
+
+    public function test_trainer_cannot_access_admin_categories(): void
+    {
+        $trainer = User::factory()->create(['role' => 'trainer']);
+        TrainerProfile::create([
+            'user_id' => $trainer->id,
+            'bio' => 'Bio',
+            'specialization' => 'Spec',
+            'approval_status' => 'approved',
+        ]);
+
+        $this->actingAs($trainer)
+            ->getJson('/api/admin/categories')
+            ->assertStatus(403);
+    }
+
     public function test_trainer_cannot_access_student_routes(): void
     {
         $trainer = User::factory()->create(['role' => 'trainer']);
         TrainerProfile::create(['user_id' => $trainer->id, 'bio' => 'Bio', 'specialization' => 'Spec', 'approval_status' => 'approved']);
 
-        $response = $this->actingAs($trainer)->getJson('/api/student/courses');
+        $response = $this->actingAs($trainer)->getJson('/api/student/enrollments');
         $response->assertStatus(403);
     }
 

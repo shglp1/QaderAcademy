@@ -3,8 +3,9 @@
 namespace App\Http\Controllers\Api\Trainer;
 
 use App\Http\Controllers\Controller;
-use App\Models\FinalExam;
 use App\Models\Course;
+use App\Models\FinalExam;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class FinalExamController extends Controller
@@ -12,10 +13,10 @@ class FinalExamController extends Controller
     public function index()
     {
         $trainerId = Auth::id();
-        
-        $exams = FinalExam::whereHas('course', function ($q) use ($trainerId) {
-                $q->where('trainer_id', $trainerId);
-            })
+
+        $exams = FinalExam::whereHas('course', function ($query) use ($trainerId) {
+            $query->where('trainer_id', $trainerId);
+        })
             ->with(['course'])
             ->get();
 
@@ -24,15 +25,22 @@ class FinalExamController extends Controller
         ]);
     }
 
-    public function store($courseId)
+    public function store(Request $request)
     {
-        $course = Course::where('trainer_id', Auth::id())->findOrFail($courseId);
+        $validated = $request->validate([
+            'course_id' => ['required', 'exists:courses,id'],
+            'title_en' => ['nullable', 'string', 'max:255'],
+            'title_ar' => ['nullable', 'string', 'max:255'],
+            'passing_score' => ['nullable', 'integer', 'min:0', 'max:100'],
+        ]);
+
+        $course = Course::where('trainer_id', Auth::id())->findOrFail($validated['course_id']);
 
         $exam = FinalExam::create([
             'course_id' => $course->id,
-            'title_en' => 'Final Exam',
-            'title_ar' => 'الاختبار النهائي',
-            'passing_score' => 50,
+            'title_en' => $validated['title_en'] ?? 'Final Exam',
+            'title_ar' => $validated['title_ar'] ?? 'Final Exam',
+            'passing_score' => $validated['passing_score'] ?? 50,
         ]);
 
         return response()->json([
@@ -52,13 +60,13 @@ class FinalExamController extends Controller
         ]);
     }
 
-    public function update($courseId, FinalExam $finalExam)
+    public function update(Request $request, FinalExam $finalExam)
     {
         if ($finalExam->course->trainer_id !== Auth::id()) {
             return response()->json(['message' => __('messages.unauthorized')], 403);
         }
 
-        $validated = request()->validate([
+        $validated = $request->validate([
             'title_en' => 'sometimes|string|max:255',
             'title_ar' => 'nullable|string|max:255',
             'passing_score' => 'sometimes|integer|min:0|max:100',

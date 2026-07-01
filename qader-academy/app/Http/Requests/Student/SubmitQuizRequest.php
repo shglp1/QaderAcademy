@@ -7,6 +7,34 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class SubmitQuizRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        $answers = $this->input('answers');
+
+        if (!is_array($answers)) {
+            return;
+        }
+
+        $isAssociative = array_keys($answers) !== range(0, count($answers) - 1);
+
+        if (!$isAssociative) {
+            return;
+        }
+
+        $normalizedAnswers = [];
+
+        foreach ($answers as $questionId => $answer) {
+            $normalizedAnswers[] = [
+                'question_id' => (int) $questionId,
+                'answer' => $answer,
+            ];
+        }
+
+        $this->merge([
+            'answers' => $normalizedAnswers,
+        ]);
+    }
+
     /**
      * Determine if the user is authorized to make this request.
      */

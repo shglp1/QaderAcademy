@@ -26,6 +26,10 @@ class CourseController extends Controller
         // Filter by category
         if ($request->filled('category_id')) {
             $query->where('category_id', $request->category_id);
+        } elseif ($request->filled('category')) {
+            $query->whereHas('category', function ($categoryQuery) use ($request) {
+                $categoryQuery->where('type', $request->category);
+            });
         }
 
         // Filter by year
@@ -75,6 +79,7 @@ class CourseController extends Controller
             'trainer.trainerProfile',
             'category',
             'chapters.videos',
+            'chapters.quizzes',
             'attachments',
             'ratings.student'
         ]);

@@ -17,6 +17,7 @@ class ChapterResource extends JsonResource
             'title_en' => $this->title_en,
             'order' => $this->order,
             'videos' => VideoResource::collection($this->whenLoaded('videos')),
+            'quiz' => $this->whenLoaded('quizzes', fn() => $this->quizzes->isNotEmpty() ? new QuizResource($this->quizzes->first()) : null),
             'quizzes' => QuizResource::collection($this->whenLoaded('quizzes')),
         ];
     }

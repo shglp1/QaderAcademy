@@ -28,19 +28,28 @@ Route::prefix('auth')->group(function () {
     Route::post('password/reset-token', [AuthController::class, 'resetPassword']);
 });
 
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('auth/me', [AuthController::class, 'me']);
+    Route::get('user', [AuthController::class, 'me']);
+});
+
+Route::get('categories', [\App\Http\Controllers\Api\Admin\CategoryController::class, 'index']);
+
+Route::prefix('student')->group(function () {
+    Route::get('courses', [StudentCourseController::class, 'index']);
+    Route::get('courses/search', [StudentCourseController::class, 'search']);
+    Route::get('courses/{course}', [StudentCourseController::class, 'show']);
+});
+
 // ==================== Student Routes ====================
 Route::middleware(['auth:sanctum', 'role:student'])->prefix('student')->group(function () {
-    // Course browsing
-    Route::get('courses', [StudentCourseController::class, 'index']);
-    Route::get('courses/{course}', [StudentCourseController::class, 'show']);
-    Route::get('courses/search', [StudentCourseController::class, 'search']);
-    
     // Enrollment & Payment
     Route::post('enrollments', [EnrollmentController::class, 'store']);
     Route::get('enrollments', [EnrollmentController::class, 'myEnrollments']);
     Route::get('enrollments/{enrollment}', [EnrollmentController::class, 'show']);
     
     // Quiz & Exam Attempts
+    Route::get('quizzes/{quiz}', [QuizController::class, 'show']);
     Route::post('quiz-attempts', [QuizController::class, 'submitQuiz']);
     Route::post('final-exam-attempts', [QuizController::class, 'submitFinalExam']);
     
@@ -50,6 +59,8 @@ Route::middleware(['auth:sanctum', 'role:student'])->prefix('student')->group(fu
     
     // Certificates
     Route::get('certificates', [StudentCourseController::class, 'myCertificates']);
+    Route::get('certificates/{certificate}/download', [\App\Http\Controllers\Api\CertificateController::class, 'download'])
+        ->name('student.certificates.download');
     
     // Ratings
     Route::post('ratings', [StudentCourseController::class, 'submitRating']);
@@ -75,9 +86,11 @@ Route::middleware(['auth:sanctum', 'role:trainer'])->prefix('trainer')->group(fu
     // Final Exam Management
     Route::apiResource('final-exams', \App\Http\Controllers\Api\Trainer\FinalExamController::class);
     Route::apiResource('final-exam-questions', \App\Http\Controllers\Api\Trainer\FinalExamQuestionController::class);
+    Route::get('categories', [\App\Http\Controllers\Api\Admin\CategoryController::class, 'index']);
     
     // Grading
     Route::get('grading-queue', [GradingController::class, 'queue']);
+    Route::post('grading/{attempt}/grade', [GradingController::class, 'grade']);
     Route::post('grade/{attempt}', [GradingController::class, 'grade']);
     
     // Attachments

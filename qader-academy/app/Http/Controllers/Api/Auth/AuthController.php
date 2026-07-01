@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules;
+use Symfony\Component\HttpFoundation\Response;
 
 class AuthController extends Controller
 {
@@ -65,13 +66,10 @@ class AuthController extends Controller
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
-        return response()->json([
-            'message' => __('auth.registration_success'),
-            'user' => $user,
-            'profile' => $request->role === 'student' ? $user->studentProfile : $user->trainerProfile,
-            'access_token' => $token,
-            'token_type' => 'Bearer',
-        ], 201);
+        return response()->json(
+            $this->authResponse($user, $token, __('auth.registration_success')),
+            Response::HTTP_CREATED
+        );
     }
 
     /**
@@ -107,14 +105,14 @@ class AuthController extends Controller
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
-        return response()->json([
-            'message' => __('auth.login_success'),
-            'user' => $user,
-            'profile' => $user->role === 'student' ? $user->studentProfile : ($user->trainerProfile ?? null),
-            'access_token' => $token,
-            'token_type' => 'Bearer',
-            'role' => $user->role,
-        ]);
+        return response()->json(
+            $this->authResponse($user, $token, __('auth.login_success'))
+        );
+    }
+
+    public function me(Request $request)
+    {
+        return response()->json($this->userPayload($request->user()));
     }
 
     /**
@@ -170,5 +168,37 @@ class AuthController extends Controller
         return $status === Password::PASSWORD_RESET
             ? response()->json(['message' => __($status)])
             : response()->json(['message' => __($status)], 400);
+    }
+
+    private function authResponse(User $user, string $token, string $message): array
+    {
+        $profile = $user->role === 'student'
+            ? $user->studentProfile
+            : ($user->trainerProfile ?? null);
+
+        return [
+            'message' => $message,
+            'user' => $this->userPayload($user),
+            'profile' => $profile,
+            'access_token' => $token,
+            'token' => $token,
+            'token_type' => 'Bearer',
+            'role' => $user->role,
+        ];
+    }
+
+    private function userPayload(User $user): array
+    {
+        $user->loadMissing(['studentProfile', 'trainerProfile']);
+
+        return [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'role' => $user->role,
+            'is_active' => (bool) $user->is_active,
+            'studentProfile' => $user->studentProfile,
+            'trainerProfile' => $user->trainerProfile,
+        ];
     }
 }

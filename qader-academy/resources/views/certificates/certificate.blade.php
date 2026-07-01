@@ -239,6 +239,14 @@
     </style>
 </head>
 <body>
+    @php
+        $student_name = $student_name ?? ($student->name ?? ($certificate->student->name ?? ''));
+        $course_title = $course_title ?? ($course->title_en ?? ($certificate->course->title_en ?? ''));
+        $trainer_name = $trainer_name ?? ($course->trainer->name ?? ($certificate->course->trainer->name ?? ''));
+        $completion_date = $completion_date ?? ($certificate->enrollment->completed_at ?? $certificate->issued_at ?? now());
+        $certificate_number = $certificate_number ?? ($certificate->certificate_number ?? $certificate->verification_code ?? '');
+        $verification_code = $verification_code ?? ($certificate->verification_code ?? $certificate_number);
+    @endphp
     <div class="certificate-container">
         <div class="border-frame">
             <!-- Corner decorations -->

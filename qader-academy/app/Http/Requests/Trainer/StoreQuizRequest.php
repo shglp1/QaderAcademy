@@ -25,7 +25,7 @@ class StoreQuizRequest extends FormRequest
         return [
             'chapter_id' => ['required', 'exists:chapters,id'],
             'title_en' => ['required', 'string', 'max:255'],
-            'title_ar' => ['required', 'string', 'max:255'],
+            'title_ar' => ['nullable', 'string', 'max:255'],
             'description_en' => ['nullable', 'string'],
             'description_ar' => ['nullable', 'string'],
             'passing_score' => ['nullable', 'numeric', 'min:0', 'max:100'],
@@ -43,7 +43,6 @@ class StoreQuizRequest extends FormRequest
             'chapter_id.required' => __('messages.chapter_required'),
             'chapter_id.exists' => __('messages.chapter_not_found'),
             'title_en.required' => __('messages.title_required'),
-            'title_ar.required' => __('messages.title_required'),
         ];
     }
 }

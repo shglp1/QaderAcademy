@@ -100,8 +100,9 @@ const isEnrolled = computed(() => !!enrollment.value && enrollment.value.status 
 
 const fetchCourse = async () => {
   try {
-    const response = await axios.get(`/api/courses/${route.params.id}`)
-    course.value = response.data.data || response.data
+    const response = await axios.get(`/api/student/courses/${route.params.id}`)
+    course.value = response.data.course || response.data.data || response.data
+    enrollment.value = response.data.enrollment || null
   } catch (error) {
     console.error('Error fetching course:', error)
   } finally {
@@ -113,8 +114,8 @@ const checkEnrollment = async () => {
   if (!authStore.isAuthenticated) return
   
   try {
-    const response = await axios.get('/api/enrollments/me')
-    const enrollments = response.data.data || response.data
+    const response = await axios.get('/api/student/enrollments')
+    const enrollments = response.data.enrollments || response.data.data || response.data
     enrollment.value = enrollments.find(e => e.course_id === parseInt(route.params.id))
   } catch (error) {
     console.error('Error checking enrollment:', error)
@@ -128,9 +129,8 @@ const enrollNow = async () => {
   }
 
   try {
-    const response = await axios.post('/api/enrollments', { course_id: course.value.id })
-    // Redirect to checkout with MyFatoorah
-    window.location.href = `/checkout/${response.data.data.id}`
+    const response = await axios.post('/api/student/enrollments', { course_id: course.value.id })
+    window.location.href = `/checkout/${response.data.enrollment.id}`
   } catch (error) {
     console.error('Error creating enrollment:', error)
     alert('Failed to enroll. Please try again.')

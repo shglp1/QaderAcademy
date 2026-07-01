@@ -17,7 +17,10 @@ return new class extends Migration
             $table->foreignId('course_id')->constrained()->onDelete('cascade');
             $table->foreignId('enrollment_id')->constrained()->onDelete('cascade');
             $table->string('certificate_number')->unique(); // verification code
+            $table->string('verification_code')->unique()->nullable();
             $table->string('qr_code_path')->nullable();
+            $table->string('file_path')->nullable();
+            $table->timestamp('issued_at')->nullable();
             $table->date('issued_date');
             $table->boolean('is_valid')->default(true);
             $table->timestamp('revoked_at')->nullable();

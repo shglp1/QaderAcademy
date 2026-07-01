@@ -9,11 +9,13 @@ use App\Models\QuizAttempt;
 use App\Models\FinalExamAttempt;
 use App\Models\PayoutRequest;
 use App\Models\Attachment;
+use App\Models\User;
 use App\Policies\CoursePolicy;
 use App\Policies\QuizAttemptPolicy;
 use App\Policies\FinalExamAttemptPolicy;
 use App\Policies\PayoutRequestPolicy;
 use App\Policies\AttachmentPolicy;
+use App\Policies\UserPolicy;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -44,5 +46,6 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(FinalExamAttempt::class, FinalExamAttemptPolicy::class);
         Gate::policy(PayoutRequest::class, PayoutRequestPolicy::class);
         Gate::policy(Attachment::class, AttachmentPolicy::class);
+        Gate::policy(User::class, UserPolicy::class);
     }
 }

@@ -362,9 +362,9 @@ const submitCourse = async () => {
   try {
     // Step 1: Create course
     const courseRes = await axios.post('/api/trainer/courses', {
-      title: course.value.title_en,
+      title_en: course.value.title_en,
       title_ar: course.value.title_ar,
-      description: course.value.description_en,
+      description_en: course.value.description_en,
       description_ar: course.value.description_ar,
       category_id: parseInt(course.value.category_id),
       price: parseFloat(course.value.price),
@@ -391,9 +391,11 @@ const submitCourse = async () => {
         await axios.post('/api/trainer/videos', {
           chapter_id: createdChapters[video.chapter_index].id,
           title_en: video.title_en,
+          title_ar: video.title_en,
           video_url: video.video_url,
           duration: video.duration,
-          is_intro: video.is_intro
+          is_intro: video.is_intro,
+          order: videos.value.indexOf(video) + 1
         })
       }
     }
@@ -404,35 +406,50 @@ const submitCourse = async () => {
         const quizRes = await axios.post('/api/trainer/quizzes', {
           chapter_id: createdChapters[quiz.chapter_index].id,
           title_en: quiz.title_en,
+          title_ar: quiz.title_en,
           passing_score: quiz.passing_score
         })
         
         const quizId = quizRes.data.quiz.id
         
         for (const question of quiz.questions) {
+          const options = question.type === 'mcq'
+            ? question.options.map((option, index) => ({
+                text_en: option,
+                text_ar: option,
+                is_correct: index === question.correct_answer
+              }))
+            : null
+
           await axios.post('/api/trainer/quiz-questions', {
             quiz_id: quizId,
-            type: question.type,
-            text: question.text,
-            options: question.type === 'mcq' ? question.options : null,
-            correct_answer: question.type === 'mcq' ? question.correct_answer : null,
-            model_answer: question.type === 'written' ? question.model_answer : null
+            question_type: question.type,
+            question_text_en: question.text,
+            question_text_ar: question.text,
+            options,
+            correct_answer: question.type === 'written' ? question.model_answer : null,
+            points: 1,
+            order: quiz.questions.indexOf(question) + 1
           })
         }
       }
     }
 
     // Step 5: Create final exam
-    const examRes = await axios.post(`/api/trainer/final-exams/${courseId}`)
+    const examRes = await axios.post('/api/trainer/final-exams', {
+      course_id: courseId,
+      passing_score: finalExam.value.passing_score
+    })
     const examId = examRes.data.exam.id
     
     for (const question of finalExam.value.questions) {
       await axios.post('/api/trainer/final-exam-questions', {
         final_exam_id: examId,
         type: question.type,
-        text: question.text,
+        question: question.text,
+        question_ar: question.text,
         options: question.type === 'mcq' ? question.options : null,
-        correct_answer: question.type === 'mcq' ? question.correct_answer : null,
+        correct_answer: question.type === 'mcq' ? question.options[question.correct_answer] : question.model_answer,
         model_answer: question.type === 'written' ? question.model_answer : null
       })
     }
@@ -453,8 +470,8 @@ const submitCourse = async () => {
 
 onMounted(async () => {
   try {
-    const res = await axios.get('/api/admin/categories')
-    categories.value = res.data.categories?.data || []
+    const res = await axios.get('/api/categories')
+    categories.value = res.data.data || []
   } catch (error) {
     console.error('Failed to load categories:', error)
   }

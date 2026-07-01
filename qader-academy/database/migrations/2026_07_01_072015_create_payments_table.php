@@ -14,12 +14,15 @@ return new class extends Migration
         Schema::create('payments', function (Blueprint $table) {
             $table->id();
             $table->foreignId('student_id')->constrained('users')->onDelete('cascade');
-            $table->foreignId('course_id')->constrained()->onDelete('cascade');
-            $table->string('transaction_id')->unique(); // MyFatoorah transaction ID
+            $table->foreignId('course_id')->nullable()->constrained()->onDelete('cascade');
+            $table->foreignId('enrollment_id')->nullable()->constrained()->onDelete('cascade');
+            $table->string('transaction_id')->nullable()->unique(); // MyFatoorah transaction ID
             $table->decimal('amount', 10, 2);
             $table->string('currency')->default('SAR');
-            $table->enum('status', ['pending', 'completed', 'failed', 'refunded'])->default('pending');
+            $table->enum('status', ['pending', 'success', 'completed', 'failed', 'cancelled', 'refunded'])->default('pending');
             $table->string('payment_method')->nullable(); // Mada, Credit Card, Apple Pay, etc.
+            $table->string('gateway_reference')->nullable()->unique();
+            $table->text('gateway_url')->nullable();
             $table->json('gateway_response')->nullable();
             $table->timestamp('paid_at')->nullable();
             $table->timestamps();

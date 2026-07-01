@@ -43,7 +43,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useI18nStore } from '@/stores/i18n'
 import { useRouter } from 'vue-router'
@@ -58,6 +58,16 @@ const currentDir = computed(() => isRTL.value ? 'rtl' : 'ltr')
 const toggleLocale = () => {
   i18nStore.toggleLocale()
 }
+
+onMounted(async () => {
+  if (authStore.token && !authStore.user) {
+    try {
+      await authStore.fetchUser()
+    } catch (error) {
+      console.error('Failed to restore student session:', error)
+    }
+  }
+})
 
 const handleLogout = () => {
   authStore.logout()

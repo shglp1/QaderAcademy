@@ -50,10 +50,28 @@ class Course extends Model
             'title_ar' => $this->title_ar,
             'description_en' => $this->description_en,
             'description_ar' => $this->description_ar,
-            'trainer_name' => $this->trainer?->name ?? '',
-            'category_name_en' => $this->category?->name_en ?? '',
-            'category_name_ar' => $this->category?->name_ar ?? '',
         ];
+    }
+
+    public function getTitleAttribute(): ?string
+    {
+        return app()->getLocale() === 'ar'
+            ? ($this->title_ar ?: $this->title_en)
+            : ($this->title_en ?: $this->title_ar);
+    }
+
+    public function getDescriptionAttribute(): ?string
+    {
+        return app()->getLocale() === 'ar'
+            ? ($this->description_ar ?: $this->description_en)
+            : ($this->description_en ?: $this->description_ar);
+    }
+
+    public function getGoalAttribute(): ?string
+    {
+        return app()->getLocale() === 'ar'
+            ? ($this->goal_ar ?: $this->goal_en)
+            : ($this->goal_en ?: $this->goal_ar);
     }
 
     public function trainer(): BelongsTo

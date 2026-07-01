@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api\Student;
 use App\Http\Controllers\Controller;
 use App\Models\Enrollment;
 use App\Models\Payment;
-use App\Http\Resources\EnrollmentResource;
+use App\Http\Resources\Student\EnrollmentResource;
 use App\Http\Requests\Student\StoreEnrollmentRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -23,6 +23,7 @@ class EnrollmentController extends Controller
         $studentId = Auth::id();
         
         $enrollments = Enrollment::with(['course.trainer.trainerProfile', 'course.category'])
+            ->with(['course.chapters', 'payment', 'certificate.enrollment.course'])
             ->where('student_id', $studentId)
             ->orderBy('created_at', 'desc')
             ->get();
@@ -45,7 +46,14 @@ class EnrollmentController extends Controller
             ], 403);
         }
 
-        $enrollment->load(['course.trainer.trainerProfile', 'course.category', 'course.chapters.videos']);
+        $enrollment->load([
+            'course.trainer.trainerProfile',
+            'course.category',
+            'course.chapters.videos',
+            'course.chapters.quizzes.questions',
+            'payment',
+            'certificate.enrollment.course',
+        ]);
 
         return response()->json([
             'enrollment' => new EnrollmentResource($enrollment),
@@ -94,17 +102,21 @@ class EnrollmentController extends Controller
                 'course_id' => $courseId,
                 'status' => 'pending_payment',
                 'progress_percentage' => 0,
-                'payment_amount' => $course->price,
             ]);
 
             // Create payment record
             $payment = Payment::create([
                 'student_id' => $studentId,
+                'course_id' => $courseId,
                 'enrollment_id' => $enrollment->id,
                 'amount' => $course->price,
                 'currency' => 'SAR',
                 'status' => 'pending',
                 'payment_method' => 'myfatoorah',
+            ]);
+
+            $enrollment->update([
+                'payment_id' => $payment->id,
             ]);
 
             DB::commit();
@@ -191,11 +203,19 @@ class EnrollmentController extends Controller
 
         } catch (\Exception $e) {
             \Log::error('MyFatoorah payment initiation failed: ' . $e->getMessage());
+
+            $mockInvoiceId = 'MF-' . time();
+            $mockCheckoutUrl = '#mock-checkout';
+
+            $payment->update([
+                'gateway_reference' => $mockInvoiceId,
+                'gateway_url' => $mockCheckoutUrl,
+            ]);
             
             // Return mock checkout URL for development
             return [
-                'invoice_id' => 'MF-' . time(),
-                'checkout_url' => '#mock-checkout',
+                'invoice_id' => $mockInvoiceId,
+                'checkout_url' => $mockCheckoutUrl,
                 'payment_id' => $payment->id,
                 'note' => 'Mock payment session (MyFatoorah not configured)',
             ];

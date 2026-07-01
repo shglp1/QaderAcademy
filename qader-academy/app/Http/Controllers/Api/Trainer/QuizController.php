@@ -37,7 +37,7 @@ class QuizController extends Controller
         $quiz = Quiz::create([
             'chapter_id' => $chapter->id,
             'title_en' => $validated['title_en'],
-            'title_ar' => $validated['title_ar'] ?? null,
+            'title_ar' => $validated['title_ar'] ?? $validated['title_en'],
             'description_en' => $validated['description_en'] ?? null,
             'description_ar' => $validated['description_ar'] ?? null,
             'passing_score' => $validated['passing_score'] ?? 70,

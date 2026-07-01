@@ -17,8 +17,8 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function login(email, password) {
     const response = await axios.post(`${API_BASE}/auth/login`, { email, password })
-    token.value = response.data.token
-    user.value = response.data.user
+    token.value = response.data.access_token || response.data.token
+    user.value = response.data.user ?? null
     
     localStorage.setItem('token', token.value)
     axios.defaults.headers.common['Authorization'] = `Bearer ${token.value}`
@@ -28,8 +28,8 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function register(userData) {
     const response = await axios.post(`${API_BASE}/auth/register`, userData)
-    token.value = response.data.token
-    user.value = response.data.user
+    token.value = response.data.access_token || response.data.token
+    user.value = response.data.user ?? null
     
     localStorage.setItem('token', token.value)
     axios.defaults.headers.common['Authorization'] = `Bearer ${token.value}`
@@ -40,7 +40,7 @@ export const useAuthStore = defineStore('auth', () => {
   async function fetchUser() {
     try {
       const response = await axios.get(`${API_BASE}/auth/me`)
-      user.value = response.data
+      user.value = response.data.user ?? response.data
       return response.data
     } catch (error) {
       logout()

@@ -40,11 +40,11 @@ class VideoController extends Controller
         $video = Video::create([
             'chapter_id' => $chapter->id,
             'title_en' => $validated['title_en'],
-            'title_ar' => $validated['title_ar'] ?? null,
+            'title_ar' => $validated['title_ar'] ?? $validated['title_en'],
             'video_url' => $validated['video_url'],
-            'duration' => $validated['duration'] ?? null,
-            'order' => $maxOrder + 1,
-            'is_intro' => $validated['is_intro'] ?? false,
+            'duration_seconds' => $validated['duration_seconds'] ?? (($validated['duration'] ?? 0) * 60),
+            'order' => $validated['order'] ?? ($maxOrder + 1),
+            'is_intro_video' => $validated['is_intro'] ?? false,
         ]);
 
         return response()->json([
@@ -73,7 +73,14 @@ class VideoController extends Controller
         }
 
         $validated = $request->validated();
-        $video->update($validated);
+        $video->update([
+            'title_en' => $validated['title_en'],
+            'title_ar' => $validated['title_ar'] ?? $validated['title_en'],
+            'video_url' => $validated['video_url'],
+            'duration_seconds' => $validated['duration_seconds'] ?? (($validated['duration'] ?? 0) * 60),
+            'order' => $validated['order'] ?? $video->order,
+            'is_intro_video' => $validated['is_intro'] ?? $video->is_intro_video,
+        ]);
 
         return response()->json([
             'message' => __('messages.video_updated'),

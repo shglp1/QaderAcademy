@@ -28,6 +28,13 @@ class QuizAttempt extends Model
         'graded_at' => 'datetime',
     ];
 
+    protected static function booted(): void
+    {
+        static::creating(function (QuizAttempt $attempt) {
+            $attempt->answers ??= [];
+        });
+    }
+
     public function student(): BelongsTo
     {
         return $this->belongsTo(User::class, 'student_id');
@@ -43,8 +50,18 @@ class QuizAttempt extends Model
         return $this->belongsTo(Enrollment::class);
     }
 
+    public function answerItems(): HasMany
+    {
+        return $this->hasMany(QuizAnswer::class);
+    }
+
     public function grader(): BelongsTo
     {
         return $this->belongsTo(User::class, 'graded_by');
+    }
+
+    public function getFeedbackAttribute(): ?string
+    {
+        return $this->grader_feedback;
     }
 }

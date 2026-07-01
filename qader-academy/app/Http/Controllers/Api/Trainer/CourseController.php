@@ -37,13 +37,15 @@ class CourseController extends Controller
         
         $course = Course::create([
             'trainer_id' => Auth::id(),
-            'title' => $validated['title'],
-            'title_ar' => $validated['title_ar'] ?? null,
-            'description' => $validated['description'],
-            'description_ar' => $validated['description_ar'] ?? null,
+            'title_en' => $validated['title_en'],
+            'title_ar' => $validated['title_ar'],
+            'description_en' => $validated['description_en'],
+            'description_ar' => $validated['description_ar'],
             'category_id' => $validated['category_id'],
             'price' => $validated['price'],
-            'duration' => $validated['duration'] ?? null,
+            'duration_minutes' => $validated['duration'] ?? 0,
+            'year' => $validated['year'] ?? null,
+            'semester' => $validated['semester'] ?? null,
             'status' => 'draft',
         ]);
 
@@ -75,13 +77,15 @@ class CourseController extends Controller
         $validated = $request->validated();
         
         $course->update([
-            'title' => $validated['title'] ?? $course->title,
+            'title_en' => $validated['title_en'] ?? $course->title_en,
             'title_ar' => $validated['title_ar'] ?? $course->title_ar,
-            'description' => $validated['description'] ?? $course->description,
+            'description_en' => $validated['description_en'] ?? $course->description_en,
             'description_ar' => $validated['description_ar'] ?? $course->description_ar,
             'category_id' => $validated['category_id'] ?? $course->category_id,
             'price' => $validated['price'] ?? $course->price,
-            'duration' => $validated['duration'] ?? $course->duration,
+            'duration_minutes' => $validated['duration'] ?? $course->duration_minutes,
+            'year' => $validated['year'] ?? $course->year,
+            'semester' => $validated['semester'] ?? $course->semester,
         ]);
 
         return response()->json([
@@ -120,7 +124,9 @@ class CourseController extends Controller
         $course->update(['status' => 'pending']);
 
         // Notify admins about pending course
-        $admins = \App\Models\User::role('admin')->orWhere('role', 'super_admin')->get();
+        $admins = \App\Models\User::where('role', 'admin')
+            ->orWhere('role', 'super_admin')
+            ->get();
         foreach ($admins as $admin) {
             $admin->notify(new \App\Notifications\CoursePendingReview($course));
         }

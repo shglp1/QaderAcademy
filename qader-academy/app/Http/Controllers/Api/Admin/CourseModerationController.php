@@ -5,7 +5,8 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\CourseResource;
 use App\Models\Course;
-use App\Notifications\CourseModerationNotification;
+use App\Notifications\CourseApproved;
+use App\Notifications\CourseRejected;
 use Illuminate\Http\Request;
 
 class CourseModerationController extends Controller
@@ -32,9 +33,7 @@ class CourseModerationController extends Controller
         $course->update(['status' => 'published']);
 
         // Notify the trainer
-        $course->trainer->notify(
-            new CourseModerationNotification('approved', 'Your course "' . $course->title . '" has been approved and is now published.')
-        );
+        $course->trainer->notify(new CourseApproved($course));
 
         return response()->json(['message' => 'Course approved and published successfully']);
     }
@@ -53,9 +52,7 @@ class CourseModerationController extends Controller
         $course->update(['status' => 'rejected']);
 
         // Notify the trainer with the rejection reason
-        $course->trainer->notify(
-            new CourseModerationNotification('rejected', 'Your course "' . $course->title . '" was rejected. Reason: ' . $request->reason)
-        );
+        $course->trainer->notify(new CourseRejected($course, $request->reason));
 
         return response()->json(['message' => 'Course rejected']);
     }

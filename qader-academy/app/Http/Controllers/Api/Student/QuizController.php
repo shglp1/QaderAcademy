@@ -8,9 +8,10 @@ use App\Models\QuizAttempt;
 use App\Models\FinalExam;
 use App\Models\FinalExamAttempt;
 use App\Models\Enrollment;
+use App\Http\Resources\QuizResource;
 use App\Services\ProgressService;
 use App\Http\Requests\Student\SubmitQuizRequest;
-use App\Http\Resources\QuizAttemptResource;
+use App\Http\Resources\Student\QuizAttemptResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -22,6 +23,29 @@ class QuizController extends Controller
     public function __construct(ProgressService $progressService)
     {
         $this->progressService = $progressService;
+    }
+
+    public function show(Quiz $quiz)
+    {
+        $studentId = Auth::id();
+        $course = $quiz->chapter->course;
+
+        $enrollment = Enrollment::where('student_id', $studentId)
+            ->where('course_id', $course->id)
+            ->where('status', 'active')
+            ->first();
+
+        if (!$enrollment) {
+            return response()->json([
+                'message' => __('messages.enrollment_required'),
+            ], 403);
+        }
+
+        $quiz->load(['questions']);
+
+        return response()->json([
+            'quiz' => new QuizResource($quiz),
+        ]);
     }
 
     /**
@@ -60,9 +84,9 @@ class QuizController extends Controller
             $attempt = QuizAttempt::create([
                 'student_id' => $studentId,
                 'quiz_id' => $quizId,
+                'enrollment_id' => $enrollment->id,
+                'answers' => $answers,
                 'status' => 'pending', // Will be updated after grading
-                'score' => 0,
-                'max_score' => 0,
             ]);
 
             $totalScore = 0;
@@ -110,7 +134,7 @@ class QuizController extends Controller
                 // Has written questions - mark as pending review
                 $attempt->update([
                     'status' => 'pending_review',
-                    'score' => $totalScore, // Only MCQ score for now
+                    'score' => $totalScore > 0 ? $totalScore : null,
                     'max_score' => $maxScore,
                 ]);
             } else {
@@ -132,7 +156,7 @@ class QuizController extends Controller
                 'message' => $hasWrittenQuestions 
                     ? __('messages.quiz_submitted_pending_review') 
                     : __('messages.quiz_graded_immediately'),
-                'attempt' => new QuizAttemptResource($attempt->fresh()),
+                'attempt' => new QuizAttemptResource($attempt->fresh(['student', 'grader', 'answerItems.question'])),
                 'immediate_feedback' => !$hasWrittenQuestions,
             ];
 

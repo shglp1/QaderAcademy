@@ -190,8 +190,8 @@ const canSubmitQuiz = computed(() => {
 
 const fetchEnrollment = async () => {
   try {
-    const response = await axios.get(`/api/enrollments/${route.params.enrollmentId}`)
-    enrollment.value = response.data.data || response.data
+    const response = await axios.get(`/api/student/enrollments/${route.params.enrollmentId}`)
+    enrollment.value = response.data.enrollment || response.data.data || response.data
     
     if (enrollment.value.course?.chapters?.length > 0) {
       selectChapter(enrollment.value.course.chapters[0])
@@ -251,8 +251,9 @@ const markVideoComplete = async () => {
   if (videoMarkedComplete.value) return
   
   try {
-    await axios.post(`/api/videos/${currentVideo.value.id}/complete`, {
-      enrollment_id: enrollment.value.id
+    await axios.post(`/api/student/videos/${currentVideo.value.id}/progress`, {
+      watched_seconds: currentVideo.value.duration_seconds,
+      is_completed: true
     })
     videoMarkedComplete.value = true
     
@@ -275,7 +276,7 @@ const closeQuizModal = () => {
 
 const submitQuizAnswer = async () => {
   try {
-    await axios.post('/api/quiz-attempts', {
+    await axios.post('/api/student/quiz-attempts', {
       quiz_question_id: currentQuizQuestion.value.id,
       answer: currentQuizQuestion.value.type === 'mcq' ? selectedAnswer.value : writtenAnswer.value,
       enrollment_id: enrollment.value.id

@@ -11,6 +11,11 @@ use Illuminate\Support\Facades\Log;
 
 class ProgressService
 {
+    public function recalculate(Enrollment $enrollment): void
+    {
+        $this->recalculateProgress($enrollment);
+    }
+
     /**
      * Weight configuration for progress calculation.
      * 

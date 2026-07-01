@@ -55,8 +55,8 @@ const processing = ref(false)
 
 const fetchEnrollment = async () => {
   try {
-    const response = await axios.get(`/api/enrollments/${route.params.enrollmentId}`)
-    enrollment.value = response.data.data || response.data
+    const response = await axios.get(`/api/student/enrollments/${route.params.enrollmentId}`)
+    enrollment.value = response.data.enrollment || response.data.data || response.data
     
     // Check if already paid
     if (enrollment.value.status === 'active') {
@@ -74,12 +74,10 @@ const fetchEnrollment = async () => {
 const proceedToPayment = async () => {
   processing.value = true
   try {
-    // Call backend to get MyFatoorah payment URL
-    const response = await axios.post(`/api/enrollments/${enrollment.value.id}/payment`)
-    
-    // Redirect to MyFatoorah hosted checkout
-    if (response.data.payment_url) {
-      window.location.href = response.data.payment_url
+    const paymentUrl = enrollment.value.payment?.checkout_url
+
+    if (paymentUrl) {
+      window.location.href = paymentUrl
     } else {
       throw new Error('No payment URL received')
     }

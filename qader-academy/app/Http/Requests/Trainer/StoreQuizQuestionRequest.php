@@ -7,6 +7,22 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class StoreQuizQuestionRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        if ($this->filled('text') && !$this->filled('question_text_en')) {
+            $this->merge([
+                'question_text_en' => $this->input('text'),
+                'question_text_ar' => $this->input('question_text_ar', $this->input('text')),
+            ]);
+        }
+
+        if ($this->filled('type') && !$this->filled('question_type')) {
+            $this->merge([
+                'question_type' => $this->input('type'),
+            ]);
+        }
+    }
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -25,7 +41,7 @@ class StoreQuizQuestionRequest extends FormRequest
         return [
             'quiz_id' => ['required', 'exists:quizzes,id'],
             'question_text_en' => ['required', 'string'],
-            'question_text_ar' => ['required', 'string'],
+            'question_text_ar' => ['nullable', 'string'],
             'question_type' => ['required', 'in:mcq,written'],
             'options' => ['nullable', 'array', 'required_if:question_type,mcq'],
             'options.*.text_en' => ['required_with:options'],
@@ -33,7 +49,7 @@ class StoreQuizQuestionRequest extends FormRequest
             'options.*.is_correct' => ['required_with:options', 'boolean'],
             'correct_answer' => ['nullable', 'string', 'required_if:question_type,written'],
             'points' => ['nullable', 'integer', 'min:1'],
-            'order' => ['required', 'integer', 'min:1'],
+            'order' => ['nullable', 'integer', 'min:1'],
         ];
     }
 
@@ -48,7 +64,6 @@ class StoreQuizQuestionRequest extends FormRequest
             'quiz_id.required' => __('messages.quiz_required'),
             'quiz_id.exists' => __('messages.quiz_not_found'),
             'question_text_en.required' => __('messages.question_required'),
-            'question_text_ar.required' => __('messages.question_required'),
             'question_type.required' => __('messages.question_type_required'),
             'question_type.in' => __('messages.question_type_invalid'),
         ];

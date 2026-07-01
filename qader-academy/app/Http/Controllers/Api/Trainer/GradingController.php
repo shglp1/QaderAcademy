@@ -46,13 +46,18 @@ class GradingController extends Controller
         ]);
     }
 
+    public function queue()
+    {
+        return $this->index();
+    }
+
     /**
      * Grade a quiz attempt.
      */
     public function grade(GradeAttemptRequest $request, $attemptId)
     {
         $validated = $request->validated();
-        $type = $validated['type']; // 'quiz' or 'final_exam'
+        $type = $request->input('type', 'quiz');
         
         DB::beginTransaction();
         try {
@@ -64,15 +69,21 @@ class GradingController extends Controller
                 
                 $attempt->update([
                     'score' => $validated['score'],
-                    'feedback' => $validated['feedback'] ?? null,
+                    'grader_feedback' => $validated['feedback'] ?? null,
                     'graded_by' => Auth::id(),
                     'graded_at' => now(),
                     'status' => 'graded',
                 ]);
                 
                 // Recalculate progress
-                $progressService = new \App\Services\ProgressService();
-                $progressService->recalculate($attempt->enrollment);
+                $enrollment = $attempt->enrollment ?? \App\Models\Enrollment::where('student_id', $attempt->student_id)
+                    ->where('course_id', $attempt->quiz->chapter->course_id)
+                    ->first();
+
+                if ($enrollment) {
+                    $progressService = new \App\Services\ProgressService();
+                    $progressService->recalculateProgress($enrollment);
+                }
                 
                 // Notify student
                 $attempt->student->notify(new \App\Notifications\GradePosted($attempt));
@@ -81,7 +92,7 @@ class GradingController extends Controller
                 
                 return response()->json([
                     'message' => __('messages.attempt_graded'),
-                    'attempt' => $attempt->fresh(['student']),
+                    'attempt' => $attempt->fresh(['student', 'grader', 'answerItems.question']),
                 ]);
                 
             } elseif ($type === 'final_exam') {
@@ -92,15 +103,17 @@ class GradingController extends Controller
                 
                 $attempt->update([
                     'score' => $validated['score'],
-                    'feedback' => $validated['feedback'] ?? null,
+                    'grader_feedback' => $validated['feedback'] ?? null,
                     'graded_by' => Auth::id(),
                     'graded_at' => now(),
                     'status' => 'graded',
                 ]);
                 
                 // Recalculate progress
-                $progressService = new \App\Services\ProgressService();
-                $progressService->recalculate($attempt->enrollment);
+                if ($attempt->enrollment) {
+                    $progressService = new \App\Services\ProgressService();
+                    $progressService->recalculateProgress($attempt->enrollment);
+                }
                 
                 // Notify student
                 $attempt->student->notify(new \App\Notifications\GradePosted($attempt));

@@ -18,11 +18,9 @@ return new class extends Migration
             $table->foreignId('payment_id')->nullable()->constrained()->onDelete('set null');
             $table->decimal('progress_percentage', 5, 2)->default(0);
             $table->decimal('overall_grade', 5, 2)->nullable(); // final calculated grade
-            $table->enum('status', ['active', 'completed', 'expired'])->default('active');
+            $table->enum('status', ['pending_payment', 'active', 'completed', 'expired'])->default('pending_payment');
             $table->timestamp('completed_at')->nullable();
             $table->timestamps();
-            
-            $table->unique(['student_id', 'course_id']);
         });
     }
 

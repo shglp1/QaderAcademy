@@ -6,6 +6,16 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class StoreFinalExamQuestionRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        if ($this->filled('text') && !$this->filled('question')) {
+            $this->merge([
+                'question' => $this->input('text'),
+                'question_ar' => $this->input('question_ar', $this->input('text')),
+            ]);
+        }
+    }
+
     /**
      * Determine if the user is authorized to make this request.
      */

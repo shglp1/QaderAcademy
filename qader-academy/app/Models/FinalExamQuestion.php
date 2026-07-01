@@ -4,12 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class QuizQuestion extends Model
+class FinalExamQuestion extends Model
 {
     protected $fillable = [
-        'quiz_id',
+        'final_exam_id',
         'question_en',
         'question_ar',
         'type',
@@ -17,11 +16,13 @@ class QuizQuestion extends Model
         'correct_answer_en',
         'correct_answer_ar',
         'points',
+        'order',
     ];
 
     protected $casts = [
         'options' => 'array',
         'points' => 'integer',
+        'order' => 'integer',
     ];
 
     public function getCorrectAnswerAttribute(): ?string
@@ -31,13 +32,8 @@ class QuizQuestion extends Model
             : ($this->correct_answer_en ?: $this->correct_answer_ar);
     }
 
-    public function quiz(): BelongsTo
+    public function finalExam(): BelongsTo
     {
-        return $this->belongsTo(Quiz::class);
-    }
-
-    public function answers(): HasMany
-    {
-        return $this->hasMany(QuizAnswer::class);
+        return $this->belongsTo(FinalExam::class);
     }
 }

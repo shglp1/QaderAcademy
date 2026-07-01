@@ -35,14 +35,17 @@ class QuizQuestionController extends Controller
 
         $question = QuizQuestion::create([
             'quiz_id' => $quiz->id,
-            'type' => $validated['type'],
-            'question_text_en' => $validated['question_text_en'],
-            'question_text_ar' => $validated['question_text_ar'] ?? null,
-            'correct_answer' => $validated['correct_answer'],
-            'hint_en' => $validated['hint_en'] ?? null,
-            'hint_ar' => $validated['hint_ar'] ?? null,
+            'type' => $validated['question_type'],
+            'question_en' => $validated['question_text_en'],
+            'question_ar' => $validated['question_text_ar'] ?? $validated['question_text_en'],
+            'options' => $validated['question_type'] === 'mcq' ? $validated['options'] : null,
+            'correct_answer_en' => $validated['question_type'] === 'written'
+                ? $validated['correct_answer']
+                : null,
+            'correct_answer_ar' => $validated['question_type'] === 'written'
+                ? $validated['correct_answer']
+                : null,
             'points' => $validated['points'] ?? 1,
-            'order' => $validated['order'] ?? ($quiz->questions()->max('order') ?? 0) + 1,
         ]);
 
         return response()->json([
@@ -69,7 +72,19 @@ class QuizQuestionController extends Controller
         }
 
         $validated = $request->validated();
-        $quizQuestion->update($validated);
+        $quizQuestion->update([
+            'type' => $validated['question_type'],
+            'question_en' => $validated['question_text_en'],
+            'question_ar' => $validated['question_text_ar'] ?? $validated['question_text_en'],
+            'options' => $validated['question_type'] === 'mcq' ? $validated['options'] : null,
+            'correct_answer_en' => $validated['question_type'] === 'written'
+                ? $validated['correct_answer']
+                : null,
+            'correct_answer_ar' => $validated['question_type'] === 'written'
+                ? $validated['correct_answer']
+                : null,
+            'points' => $validated['points'] ?? $quizQuestion->points,
+        ]);
 
         return response()->json([
             'message' => __('messages.question_updated'),

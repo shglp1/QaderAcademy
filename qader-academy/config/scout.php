@@ -59,4 +59,17 @@ return [
         'index-settings' => [],
     ],
 
+    'database' => [
+        'searches' => [
+            \App\Models\Course::class => [
+                'columns' => [
+                    'title_en',
+                    'title_ar',
+                    'description_en',
+                    'description_ar',
+                ],
+            ],
+        ],
+    ],
+
 ];

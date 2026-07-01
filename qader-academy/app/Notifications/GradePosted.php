@@ -80,6 +80,6 @@ class GradePosted extends Notification implements ShouldQueue
     protected function getCourseTitle()
     {
         $course = \App\Models\Course::find($this->getCourseId());
-        return $course ? $course->title : '';
+        return $course ? $course->title_en : '';
     }
 }

@@ -93,8 +93,8 @@ const fetchCourses = async () => {
     if (filters.value.semester) params.semester = filters.value.semester
     if (searchQuery.value) params.search = searchQuery.value
 
-    const response = await axios.get('/api/courses', { params })
-    courses.value = response.data.data || response.data
+    const response = await axios.get('/api/student/courses', { params })
+    courses.value = response.data.data || []
   } catch (error) {
     console.error('Error fetching courses:', error)
   } finally {

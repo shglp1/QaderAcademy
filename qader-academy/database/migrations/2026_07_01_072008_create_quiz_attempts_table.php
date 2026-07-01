@@ -15,10 +15,11 @@ return new class extends Migration
             $table->id();
             $table->foreignId('student_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('quiz_id')->constrained()->onDelete('cascade');
-            $table->json('answers'); // [{question_id, answer_text, selected_option_id}]
-            $table->decimal('score', 5, 2)->default(0);
+            $table->foreignId('enrollment_id')->nullable()->constrained()->onDelete('set null');
+            $table->json('answers')->nullable(); // [{question_id, answer_text, selected_option_id}]
+            $table->decimal('score', 5, 2)->nullable();
             $table->integer('max_score')->default(0);
-            $table->enum('status', ['pending', 'graded', 'auto_graded'])->default('pending');
+            $table->enum('status', ['pending', 'pending_review', 'graded', 'auto_graded'])->default('pending');
             $table->foreignId('graded_by')->nullable()->constrained('users')->onDelete('set null');
             $table->text('grader_feedback')->nullable();
             $table->timestamp('graded_at')->nullable();

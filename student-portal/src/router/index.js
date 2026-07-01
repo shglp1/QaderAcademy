@@ -24,7 +24,7 @@ const routes = [
     meta: { requiresAuth: true, role: 'student' }
   },
   {
-    path: '/quiz/:attemptId',
+    path: '/quiz/:quizId',
     name: 'QuizTaking',
     component: () => import('@/views/QuizTakingView.vue'),
     meta: { requiresAuth: true, role: 'student' }
