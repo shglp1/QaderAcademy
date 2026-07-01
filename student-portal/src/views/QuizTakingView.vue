@@ -1,0 +1,177 @@
+<template>
+  <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+    <h1 class="text-2xl font-bold mb-6">{{ $t('quiz.results') }}</h1>
+
+    <div v-if="loading" class="text-center py-12">
+      <p class="text-gray-600">{{ $t('common.loading') }}</p>
+    </div>
+
+    <div v-else-if="quiz" class="bg-white rounded-lg shadow-sm p-6">
+      <h2 class="text-xl font-semibold mb-6">{{ quiz.title }}</h2>
+
+      <!-- Questions List -->
+      <div class="space-y-6">
+        <div v-for="(question, index) in quiz.questions" :key="question.id" class="border-b pb-6 last:border-0">
+          <div class="flex items-start gap-4 mb-4">
+            <span class="bg-indigo-100 text-indigo-800 w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0">
+              {{ index + 1 }}
+            </span>
+            <div class="flex-grow">
+              <p class="font-medium mb-3">{{ question.question_text }}</p>
+              
+              <!-- MCQ Options -->
+              <div v-if="question.type === 'mcq'" class="space-y-2">
+                <label 
+                  v-for="option in question.options" 
+                  :key="option.id"
+                  :class="['flex items-center gap-2 p-3 border rounded-md cursor-pointer', getOptionClass(question, option)]"
+                >
+                  <input 
+                    type="radio" 
+                    :name="'q_' + question.id" 
+                    :value="option.id"
+                    v-model="answers[question.id]"
+                    :disabled="submitted"
+                    class="accent-indigo-600"
+                  />
+                  <span>{{ option.text }}</span>
+                </label>
+              </div>
+
+              <!-- Written Answer -->
+              <textarea 
+                v-else
+                v-model="answers[question.id]"
+                :disabled="submitted"
+                placeholder="Type your answer here..."
+                class="w-full border rounded-md px-4 py-2 h-32 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              ></textarea>
+
+              <!-- Feedback (after grading) -->
+              <div v-if="question.feedback" :class="['mt-3 p-3 rounded-md', question.is_correct ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800']">
+                <p><strong>{{ $t('quiz.feedback') }}:</strong> {{ question.feedback }}</p>
+                <p v-if="question.model_answer && !question.is_correct"><strong>Correct answer:</strong> {{ question.model_answer }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Submit Button -->
+      <div v-if="!submitted" class="mt-6 pt-6 border-t">
+        <button 
+          @click="submitQuiz"
+          :disabled="!canSubmit || submitting"
+          class="w-full bg-indigo-600 text-white py-3 rounded-md font-semibold hover:bg-indigo-700 disabled:opacity-50"
+        >
+          {{ submitting ? $t('common.loading') : $t('quiz.submit') }}
+        </button>
+      </div>
+
+      <!-- Results Summary -->
+      <div v-if="submitted && score !== null" class="mt-6 pt-6 border-t text-center">
+        <div class="text-3xl font-bold mb-2" :class="score >= 50 ? 'text-green-600' : 'text-red-600'">
+          {{ score }}%
+        </div>
+        <p class="text-gray-600">{{ $t('quiz.score') }}</p>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import axios from 'axios'
+
+const route = useRoute()
+const router = useRouter()
+
+const quiz = ref(null)
+const loading = ref(true)
+const answers = ref({})
+const submitted = ref(false)
+const submitting = ref(false)
+const score = ref(null)
+
+const canSubmit = computed(() => {
+  if (!quiz.value) return false
+  return quiz.value.questions.every(q => answers.value[q.id] !== undefined && answers.value[q.id] !== null && answers.value[q.id] !== '')
+})
+
+const getOptionClass = (question, option) => {
+  if (!submitted.value) return 'hover:bg-gray-50'
+  
+  if (question.type === 'mcq') {
+    const userAnswer = answers.value[question.id]
+    const isCorrect = option.is_correct
+    
+    if (userAnswer === option.id && isCorrect) {
+      return 'bg-green-100 border-green-500 text-green-800'
+    } else if (userAnswer === option.id && !isCorrect) {
+      return 'bg-red-100 border-red-500 text-red-800'
+    } else if (isCorrect) {
+      return 'bg-green-50 border-green-300 text-green-800'
+    }
+  }
+  
+  return 'border-gray-200'
+}
+
+const fetchQuiz = async () => {
+  try {
+    const response = await axios.get(`/api/trainer/quizzes/${route.params.quizId}`)
+    quiz.value = response.data.data || response.data
+    
+    // Initialize answers object
+    quiz.value.questions.forEach(q => {
+      answers.value[q.id] = null
+    })
+  } catch (error) {
+    console.error('Error fetching quiz:', error)
+    alert('Failed to load quiz')
+    router.push('/profile')
+  } finally {
+    loading.value = false
+  }
+}
+
+const submitQuiz = async () => {
+  if (!canSubmit.value) return
+  
+  submitting.value = true
+  try {
+    const formattedAnswers = quiz.value.questions.map(q => ({
+      question_id: q.id,
+      answer: answers.value[q.id]
+    }))
+
+    const response = await axios.post('/api/quiz-attempts', {
+      quiz_id: quiz.value.id,
+      answers: formattedAnswers
+    })
+    
+    submitted.value = true
+    score.value = response.data.score
+    
+    // Update questions with feedback
+    quiz.value.questions.forEach(q => {
+      const attempt = response.data.attempts.find(a => a.question_id === q.id)
+      if (attempt) {
+        q.feedback = attempt.feedback
+        q.is_correct = attempt.is_correct
+        q.model_answer = attempt.model_answer
+      }
+    })
+  } catch (error) {
+    console.error('Error submitting quiz:', error)
+    alert('Failed to submit quiz')
+  } finally {
+    submitting.value = false
+  }
+}
+
+onMounted(() => {
+  fetchQuiz()
+})
+</script>
