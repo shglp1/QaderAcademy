@@ -44,6 +44,10 @@ Route::middleware(['auth:sanctum'])->prefix('student')->group(function () {
     Route::post('quiz-attempts', [QuizController::class, 'submitQuiz']);
     Route::post('final-exam-attempts', [QuizController::class, 'submitFinalExam']);
     
+    // Video Progress Tracking
+    Route::post('videos/{video}/progress', [\App\Http\Controllers\Api\Student\VideoProgressController::class, 'markComplete']);
+    Route::get('videos/{video}/progress', [\App\Http\Controllers\Api\Student\VideoProgressController::class, 'showProgress']);
+    
     // Certificates
     Route::get('certificates', [StudentCourseController::class, 'myCertificates']);
     
