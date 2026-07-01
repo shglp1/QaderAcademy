@@ -3,47 +3,79 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\CourseResource;
+use App\Models\Course;
+use App\Notifications\CourseModerationNotification;
 use Illuminate\Http\Request;
 
 class CourseModerationController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * List all pending courses awaiting approval
      */
-    public function index()
+    public function pendingCourses()
     {
-        //
+        $courses = Course::where('status', 'pending')
+            ->with(['trainer.trainerProfile', 'category'])
+            ->paginate(20);
+
+        return CourseResource::collection($courses);
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Approve a course and publish it
      */
-    public function store(Request $request)
+    public function approveCourse(Course $course)
     {
-        //
+        $this->authorize('update', $course);
+
+        $course->update(['status' => 'published']);
+
+        // Notify the trainer
+        $course->trainer->notify(
+            new CourseModerationNotification('approved', 'Your course "' . $course->title . '" has been approved and is now published.')
+        );
+
+        return response()->json(['message' => 'Course approved and published successfully']);
     }
 
     /**
-     * Display the specified resource.
+     * Reject a course with a required reason
      */
-    public function show(string $id)
+    public function rejectCourse(Course $course, Request $request)
     {
-        //
+        $this->authorize('update', $course);
+
+        $request->validate([
+            'reason' => 'required|string|max:1000'
+        ]);
+
+        $course->update(['status' => 'rejected']);
+
+        // Notify the trainer with the rejection reason
+        $course->trainer->notify(
+            new CourseModerationNotification('rejected', 'Your course "' . $course->title . '" was rejected. Reason: ' . $request->reason)
+        );
+
+        return response()->json(['message' => 'Course rejected']);
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update a course (admin can edit any course)
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, Course $course)
     {
-        //
-    }
+        $this->authorize('update', $course);
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        $validated = $request->validate([
+            'title' => 'sometimes|required|string|max:255',
+            'description' => 'sometimes|required|string',
+            'price' => 'sometimes|required|numeric|min:0',
+            'category_id' => 'sometimes|required|exists:categories,id'
+        ]);
+
+        $course->update($validated);
+
+        return new CourseResource($course);
     }
 }
