@@ -45,7 +45,7 @@ class QaderAcademyTest extends TestCase
             'age' => 22,
             'birth_date' => '2002-01-15',
             'university' => 'Cairo University',
-            'graduation_status' => 'current_student',
+            'graduation_status' => 'not_graduated',
             'city' => 'Cairo'
         ]);
 
@@ -85,7 +85,7 @@ class QaderAcademyTest extends TestCase
     public function test_login_all_roles(): void
     {
         $student = User::factory()->create(['role' => 'student', 'password' => bcrypt('password')]);
-        StudentProfile::create(['user_id' => $student->id, 'university' => 'Test', 'city' => 'Cairo', 'age' => 20, 'graduation_status' => 'current_student']);
+        StudentProfile::create(['user_id' => $student->id, 'university' => 'Test', 'city' => 'Cairo', 'age' => 20, 'graduation_status' => 'not_graduated']);
         $this->postJson('/api/auth/login', ['email' => $student->email, 'password' => 'password'])->assertStatus(200);
 
         $trainer = User::factory()->create(['role' => 'trainer', 'password' => bcrypt('password')]);
@@ -99,7 +99,7 @@ class QaderAcademyTest extends TestCase
     public function test_enrollment_payment_webhook_flow(): void
     {
         $student = User::factory()->create(['role' => 'student', 'password' => bcrypt('password')]);
-        StudentProfile::create(['user_id' => $student->id, 'university' => 'Test', 'city' => 'Cairo', 'age' => 20, 'graduation_status' => 'current_student']);
+        StudentProfile::create(['user_id' => $student->id, 'university' => 'Test', 'city' => 'Cairo', 'age' => 20, 'graduation_status' => 'not_graduated']);
         
         $trainer = User::factory()->create(['role' => 'trainer']);
         TrainerProfile::create(['user_id' => $trainer->id, 'bio' => 'Bio', 'specialization' => 'Spec', 'approval_status' => 'approved']);
@@ -134,7 +134,7 @@ class QaderAcademyTest extends TestCase
     public function test_quiz_mcq_auto_grade(): void
     {
         $student = User::factory()->create(['role' => 'student', 'password' => bcrypt('password')]);
-        StudentProfile::create(['user_id' => $student->id, 'university' => 'Test', 'city' => 'Cairo', 'age' => 20, 'graduation_status' => 'current_student']);
+        StudentProfile::create(['user_id' => $student->id, 'university' => 'Test', 'city' => 'Cairo', 'age' => 20, 'graduation_status' => 'not_graduated']);
         
         $trainer = User::factory()->create(['role' => 'trainer']);
         TrainerProfile::create(['user_id' => $trainer->id, 'bio' => 'Bio', 'specialization' => 'Spec', 'approval_status' => 'approved']);
@@ -155,8 +155,8 @@ class QaderAcademyTest extends TestCase
         $question = QuizQuestion::create([
             'quiz_id' => $quiz->id,
             'type' => 'mcq',
-            'question_text_en' => 'What is 2+2?',
-            'question_text_ar' => 'كم 2+2؟',
+            'question_en' => 'What is 2+2?',
+            'question_ar' => 'كم 2+2؟',
             'correct_answer_en' => '4',
             'correct_answer_ar' => '4',
             'points' => 10
@@ -178,7 +178,7 @@ class QaderAcademyTest extends TestCase
     public function test_quiz_written_hidden_until_graded(): void
     {
         $student = User::factory()->create(['role' => 'student', 'password' => bcrypt('password')]);
-        StudentProfile::create(['user_id' => $student->id, 'university' => 'Test', 'city' => 'Cairo', 'age' => 20, 'graduation_status' => 'current_student']);
+        StudentProfile::create(['user_id' => $student->id, 'university' => 'Test', 'city' => 'Cairo', 'age' => 20, 'graduation_status' => 'not_graduated']);
         
         $trainer = User::factory()->create(['role' => 'trainer']);
         TrainerProfile::create(['user_id' => $trainer->id, 'bio' => 'Bio', 'specialization' => 'Spec', 'approval_status' => 'approved']);
@@ -199,8 +199,8 @@ class QaderAcademyTest extends TestCase
         $question = QuizQuestion::create([
             'quiz_id' => $quiz->id,
             'type' => 'written',
-            'question_text_en' => 'Explain OOP',
-            'question_text_ar' => 'اشرح البرمجة كائنية التوجه',
+            'question_en' => 'Explain OOP',
+            'question_ar' => 'اشرح البرمجة كائنية التوجه',
             'correct_answer_en' => 'Object Oriented Programming',
             'correct_answer_ar' => 'البرمجة كائنية التوجه',
             'points' => 20
@@ -224,7 +224,7 @@ class QaderAcademyTest extends TestCase
         Notification::fake();
         
         $student = User::factory()->create(['role' => 'student', 'password' => bcrypt('password')]);
-        StudentProfile::create(['user_id' => $student->id, 'university' => 'Test', 'city' => 'Cairo', 'age' => 20, 'graduation_status' => 'current_student']);
+        StudentProfile::create(['user_id' => $student->id, 'university' => 'Test', 'city' => 'Cairo', 'age' => 20, 'graduation_status' => 'not_graduated']);
         
         $trainer = User::factory()->create(['role' => 'trainer']);
         TrainerProfile::create(['user_id' => $trainer->id, 'bio' => 'Bio', 'specialization' => 'Spec', 'approval_status' => 'approved']);
@@ -245,8 +245,8 @@ class QaderAcademyTest extends TestCase
         $question = QuizQuestion::create([
             'quiz_id' => $quiz->id,
             'type' => 'written',
-            'question_text_en' => 'Explain OOP',
-            'question_text_ar' => 'اشرح',
+            'question_en' => 'Explain OOP',
+            'question_ar' => 'اشرح',
             'correct_answer_en' => 'OOP principles',
             'correct_answer_ar' => 'مبادئ',
             'points' => 20
@@ -316,7 +316,7 @@ class QaderAcademyTest extends TestCase
     public function test_certificate_verification(): void
     {
         $student = User::factory()->create(['role' => 'student', 'password' => bcrypt('password')]);
-        StudentProfile::create(['user_id' => $student->id, 'university' => 'Test', 'city' => 'Cairo', 'age' => 20, 'graduation_status' => 'current_student']);
+        StudentProfile::create(['user_id' => $student->id, 'university' => 'Test', 'city' => 'Cairo', 'age' => 20, 'graduation_status' => 'not_graduated']);
         
         $trainer = User::factory()->create(['role' => 'trainer']);
         TrainerProfile::create(['user_id' => $trainer->id, 'bio' => 'Bio', 'specialization' => 'Spec', 'approval_status' => 'approved']);
