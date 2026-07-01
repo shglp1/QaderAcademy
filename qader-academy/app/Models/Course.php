@@ -6,9 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Laravel\Scout\Searchable;
 
 class Course extends Model
 {
+    use Searchable;
+
     protected $fillable = [
         'trainer_id',
         'category_id',
@@ -34,6 +37,24 @@ class Course extends Model
         'rating_average' => 'decimal:2',
         'rating_count' => 'integer',
     ];
+
+    /**
+     * Get the indexable data array for the model.
+     * Bilingual search across title and description.
+     */
+    public function toSearchableArray(): array
+    {
+        return [
+            'id' => (string) $this->id,
+            'title_en' => $this->title_en,
+            'title_ar' => $this->title_ar,
+            'description_en' => $this->description_en,
+            'description_ar' => $this->description_ar,
+            'trainer_name' => $this->trainer?->name ?? '',
+            'category_name_en' => $this->category?->name_en ?? '',
+            'category_name_ar' => $this->category?->name_ar ?? '',
+        ];
+    }
 
     public function trainer(): BelongsTo
     {

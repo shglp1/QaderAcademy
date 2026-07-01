@@ -107,7 +107,7 @@ class CourseController extends Controller
     }
 
     /**
-     * Search courses by keyword (bilingual).
+     * Search courses by keyword (bilingual) using Laravel Scout.
      * GET /api/student/courses/search
      */
     public function search(Request $request)
@@ -118,27 +118,10 @@ class CourseController extends Controller
             return CourseResource::collection(Course::where('status', 'published')->paginate(15));
         }
 
-        $query = Course::with(['trainer.trainerProfile', 'category'])
+        // Use Laravel Scout for full-text bilingual search
+        $courses = Course::search($keyword)
             ->where('status', 'published')
-            ->where(function ($q) use ($keyword) {
-                $q->where('title_en', 'LIKE', "%{$keyword}%")
-                  ->orWhere('title_ar', 'LIKE', "%{$keyword}%")
-                  ->orWhere('description_en', 'LIKE', "%{$keyword}%")
-                  ->orWhere('description_ar', 'LIKE', "%{$keyword}%");
-            });
-
-        // Also search in trainer names
-        $trainerIds = \App\Models\User::where('role', 'trainer')
-            ->where(function ($q) use ($keyword) {
-                $q->where('name', 'LIKE', "%{$keyword}%");
-            })
-            ->pluck('id');
-            
-        if ($trainerIds->isNotEmpty()) {
-            $query->orWhereIn('trainer_id', $trainerIds);
-        }
-
-        $courses = $query->paginate($request->get('per_page', 15));
+            ->paginate($request->get('per_page', 15));
 
         return CourseResource::collection($courses);
     }
