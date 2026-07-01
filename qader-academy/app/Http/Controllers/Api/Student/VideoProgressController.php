@@ -66,6 +66,9 @@ class VideoProgressController extends Controller
 
         // Recalculate enrollment progress
         $this->progressService->recalculateProgress($enrollment);
+        
+        // Refresh the enrollment model to get updated values
+        $enrollment->refresh();
 
         return response()->json([
             'message' => $isCompleted ? 'Video marked as completed' : 'Progress updated',
@@ -76,10 +79,8 @@ class VideoProgressController extends Controller
                 'completed_at' => $completion->completed_at,
             ],
             'enrollment_progress' => [
-                'videos_progress' => $enrollment->videos_progress,
-                'quizzes_progress' => $enrollment->quizzes_progress,
-                'final_exam_progress' => $enrollment->final_exam_progress,
-                'overall_progress' => $enrollment->overall_progress,
+                'progress_percentage' => $enrollment->progress_percentage,
+                'status' => $enrollment->status,
             ],
         ]);
     }

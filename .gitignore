@@ -1,13 +1,4 @@
 ```
-# Environment
-.env
-.env.local
-.env.*
-
-# Dependencies
-vendor/
-node_modules/
-
 # Compiled and build artifacts
 *.pyc
 __pycache__/
@@ -15,25 +6,40 @@ __pycache__/
 *.obj
 dist/
 build/
-target/
+
+# Dependencies
+vendor/
+node_modules/
 
 # Logs and temp files
 *.log
 *.tmp
 *.swp
 
+# Environment
+.env
+.env.local
+*.env.*
+
 # Editors
 .vscode/
 .idea/
 
+# Laravel/Homestead specific
+Homestead.json
+Homestead.yaml
+Vagrantfile
+
+# PHP specific
+*.php~
+.php_cs.cache
+
+# Coverage
+.coverage
+coverage/
+htmlcov/
+
 # OS generated files
 .DS_Store
 Thumbs.db
-
-# Laravel specific
-bootstrap/cache/
-storage/logs/
-storage/framework/
-public/storage/
-composer.lock
 ```
